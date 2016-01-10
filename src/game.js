@@ -3,8 +3,8 @@
  */
 
 keys = {};
-playerAccel = 1000; //.4
-playerDecel = 300;
+playerAccel = 1500; //.4
+playerDecel = 400;
 
 function init() {
     //Create a stage by getting a reference to the canvas
@@ -15,7 +15,6 @@ function init() {
 
     //TODO(quinton): Fix start location magic numbers
     playerSquare.graphics.beginFill("#1643A3").drawRect(220,585,90,90);
-
     playerSquare.velocity = 0;
 
     stage.addChild(playerSquare);
@@ -39,24 +38,29 @@ function init() {
 
 
     function movePlayerBox(box, acceleration, time) {
-
         box.x = (.5 * acceleration * Math.pow(time,2)) + box.velocity * time + box.x;
         box.velocity = acceleration * time + box.velocity;
-
+        if (Math.abs(box.velocity) < 1) box.velocity = 0;
     }
 
     function handleTick(event) {
-
-        acceleration = 0;
+        var acceleration = 0;
 
         //calculate acceleration of player based on pressed keys
         if (keys[68]) acceleration -= playerAccel;
         if (keys[70]) acceleration += playerAccel;
 
-        if (playerSquare.velocity > 0) acceleration -= playerDecel;
-        else if (playerSquare.velocity < 0) acceleration += playerDecel;
+        //moving right = positive velocity
+        //moving left = negative velocity
+        //positive velocity -> negative acceleration (due to friction)
+        //negative velocity -> positive acceleration (due to friction)
+        acceleration -= playerDecel * getSign(playerSquare.velocity);
 
         movePlayerBox(playerSquare, acceleration, event.delta/1000);
         stage.update();
     }
+}
+
+function getSign(x) {
+    return x == 0 ? 0 : x < 0 ? -1 : 1;
 }
