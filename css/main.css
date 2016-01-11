@@ -2,11 +2,6 @@ body {
     background-color: #000;
 }
 
-div.game {
-    margin: 0 auto;
-    width: 50%;
-}
-
 #demoCanvas {
     background-color: #FFEDD1;
 }
