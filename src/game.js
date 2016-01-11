@@ -4,15 +4,18 @@
 
 var keys = {};
 
-var playerAccel = 1500; //.4
+var playerAccel = 2000; //.4
 var playerDecel = 400;
 
 var enemyWidth = 60;
 var enemyHeight = 50;
-var enemyFallSpeed = .3;
+var gravity = 750;
 
 var playerSquare;
-var defaultPlayerSize = 90;
+var defaultPlayerHeight = 80;
+var defaultPlayerWidth = 20;
+
+var FPS = 60;
 
 var stage;
 
@@ -24,13 +27,14 @@ function init() {
     stage.width = stage.canvas.width;
     stage.height = stage.canvas.height;
 
-    initPlayerSquare();
     splitters = [];
+    playerBoxes = [];
+    addPlayerBox(4,stage.width / 2 - defaultPlayerHeight / 2);
 
 
     //Update stage will render next frame
     createjs.Ticker.addEventListener("tick", handleTick);
-    createjs.Ticker.setFPS(60);
+    createjs.Ticker.setFPS(FPS);
 
     this.document.onkeydown = keydown;
     this.document.onkeyup = keyup;
@@ -47,7 +51,7 @@ function keyup(event) {
 function movePlayerBox(box, acceleration, time) {
 
     //get next potential spot
-    newPos = (.5 * acceleration * Math.pow(time,2)) + box.velocity * time + box.x;
+    var newPos = (.5 * acceleration * Math.pow(time,2)) + box.velocity * time + box.x;
 
     //if this spot is a collision
     //get the new acceleration
@@ -65,11 +69,10 @@ function movePlayerBox(box, acceleration, time) {
 }
 
 function moveObjectVertical(object, acceleration, time) {
-
-    newPos = (.5 * acceleration * Math.pow(time,2)) + object.velocity * time + object.y;
+    time = time / 1000;
+    var newPos = (.5 * acceleration * Math.pow(time,2)) + object.velocity * time + object.y;
     object.y = newPos;
-    object.velocity = acceleration * time + object.velocity;
-
+    object.velocity += acceleration * time;
 }
 
 function handleTick(event) {
@@ -92,20 +95,22 @@ function handleTick(event) {
     stage.update();
 }
 
-function initPlayerSquare() {
+function addPlayerBox(mass, xPos) {
     //create a square object
     playerSquare = new createjs.Shape();
 
-    playerSquare.graphics.beginFill("#1643A3").drawRect(
-        stage.width / 2 - defaultPlayerSize / 2,
-        stage.height - defaultPlayerSize - 10,
-        defaultPlayerSize,
-        defaultPlayerSize
+    playerSquare.graphics.beginFill("#115B89").drawRect(
+        xPos,
+        stage.height - defaultPlayerHeight - 10,
+        defaultPlayerWidth * mass,
+        defaultPlayerHeight
     );
     playerSquare.leftBound = -1 * stage.width / 2;
     playerSquare.rightBound = stage.width / 2;
     playerSquare.velocity = 0;
+    playerSquare.mass = mass;
 
+    playerBoxes.push(playerSquare);
     stage.addChild(playerSquare);
 }
 
@@ -136,8 +141,8 @@ function randomlyGenerateSplitter() {
 function addSplitter() {
     //create a new enemy
     var splitter = new createjs.Shape();
-    splitter.velocity = enemyFallSpeed;
-    splitter.graphics.beginFill("red");
+    splitter.velocity = 500;
+    splitter.graphics.beginFill("#D70230");
     startingXLocation = Math.floor(Math.random() * stage.width - enemyWidth/2);
     startingYLocation = enemyHeight * -1;
     splitter.graphics.moveTo((startingXLocation + enemyWidth/2), startingYLocation + enemyHeight)  //bottom
@@ -152,16 +157,9 @@ function moveSplitters(event) {
     for (var i = 0; i < splitters.length; i++) {
         //if splitter is on screen
         if (splitters[i].y - enemyHeight < stage.height) {
-
-
-            moveObjectVertical(splitters[i], 0, event.delta);
-
-            //splitters[i].y += enemyFallSpeed;
-            //if (splitters[i].y > this.startY - 51 && this.splitters[i].y > this.startY - 49) {
-                //checkPlayerSplitterCollision(this.splitters[i])
-            //}
+            moveObjectVertical(splitters[i], gravity, event.delta);
         } else {
-            splitters.shift();
+            delete splitters.shift();
         }
     }
 }
