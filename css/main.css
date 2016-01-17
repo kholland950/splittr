@@ -1,10 +1,10 @@
 body {
     background-color: #000;
+    margin: 0;
 }
 
-div.game {
-    margin: 0 auto;
-    width: 50%;
+.over {
+    position: fixed;
 }
 
 #demoCanvas {
