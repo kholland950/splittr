@@ -7,6 +7,6 @@ body {
     position: fixed;
 }
 
-#demoCanvas {
+#game-canvas {
     background-color: #FFEDD1;
 }
