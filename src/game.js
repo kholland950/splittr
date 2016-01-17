@@ -24,7 +24,7 @@ var mouseX = 0;
 
 function init() {
     //Create a stage by getting a reference to the canvas
-    stage = new createjs.Stage("demoCanvas");
+    stage = new createjs.Stage("game-canvas");
     stage.canvas.width = window.innerWidth;
     stage.canvas.height = window.innerHeight;
     stage.width = stage.canvas.width;
