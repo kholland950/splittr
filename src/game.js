@@ -4,7 +4,7 @@
 
 var keys = {};
 
-var playerAccel = 2000; //.4
+var playerAccel = 3000; //.4
 var playerDecel = 400;
 
 var enemyWidth = 60;
@@ -19,6 +19,9 @@ var FPS = 60;
 
 var stage;
 
+var mousedown = false;
+var mouseX = 0;
+
 function init() {
     //Create a stage by getting a reference to the canvas
     stage = new createjs.Stage("demoCanvas");
@@ -27,10 +30,19 @@ function init() {
     stage.width = stage.canvas.width;
     stage.height = stage.canvas.height;
 
+    stage.on("stagemousedown", function(event) {
+        mousedown = true;
+        mouseX = event.stageX;
+    });
+    stage.on("stagemouseup", function(event) {
+       mousedown = false;
+    });
+
     splitters = [];
     playerBoxes = [];
     addPlayerBox(4,stage.width / 2 - defaultPlayerHeight / 2);
 
+    createjs.Touch.enable(stage);
 
     //Update stage will render next frame
     createjs.Ticker.addEventListener("tick", handleTick);
@@ -70,8 +82,7 @@ function movePlayerBox(box, acceleration, time) {
 
 function moveObjectVertical(object, acceleration, time) {
     time = time / 1000;
-    var newPos = (.5 * acceleration * Math.pow(time,2)) + object.velocity * time + object.y;
-    object.y = newPos;
+    object.y = (.5 * acceleration * Math.pow(time,2)) + object.velocity * time + object.y;
     object.velocity += acceleration * time;
 }
 
@@ -79,8 +90,8 @@ function handleTick(event) {
     playerSquare.acceleration = 0;
 
     //calculate acceleration of player based on pressed keys
-    if (keys[68]) playerSquare.acceleration -= playerAccel;
-    if (keys[70]) playerSquare.acceleration += playerAccel;
+    if (keys[68] || (mousedown && mouseX < stage.width / 2)) playerSquare.acceleration -= playerAccel;
+    if (keys[70] || (mousedown && mouseX > stage.width / 2)) playerSquare.acceleration += playerAccel;
 
     //moving right = positive velocity
     //moving left = negative velocity
@@ -116,13 +127,13 @@ function addPlayerBox(mass, xPos) {
 
 
 function checkCollision(object, nextPos) {
-    if (object.x + object.graphics.command.w / 2 > object.rightBound) {
+    if (nextPos + object.graphics.command.w / 2 > object.rightBound) {
         object.x = object.rightBound - object.graphics.command.w / 2;
-        object.velocity *= -.2;
+        object.velocity *= -.4;
         return true;
-    } else if (object.x - object.graphics.command.w / 2 < object.leftBound) {
+    } else if (nextPos - object.graphics.command.w / 2 < object.leftBound) {
         object.x = object.leftBound + object.graphics.command.w / 2;
-        object.velocity *= -.2;
+        object.velocity *= -.4;
         return true;
     }
     return false;
@@ -143,8 +154,8 @@ function addSplitter() {
     var splitter = new createjs.Shape();
     splitter.velocity = 500;
     splitter.graphics.beginFill("#D70230");
-    startingXLocation = Math.floor(Math.random() * stage.width - enemyWidth/2);
-    startingYLocation = enemyHeight * -1;
+    var startingXLocation = Math.floor(Math.random() * stage.width - enemyWidth/2);
+    var startingYLocation = enemyHeight * -1;
     splitter.graphics.moveTo((startingXLocation + enemyWidth/2), startingYLocation + enemyHeight)  //bottom
         .lineTo(startingXLocation, startingYLocation) //top left
         .lineTo((startingXLocation + enemyWidth), startingYLocation) //top right
