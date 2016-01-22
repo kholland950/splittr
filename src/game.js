@@ -15,6 +15,8 @@ var playerSquare;
 var defaultPlayerHeight = 80;
 var defaultPlayerWidth = 20;
 
+var splitters;
+
 var FPS = 60;
 
 var stage;
@@ -87,6 +89,9 @@ function moveObjectVertical(object, acceleration, time) {
 }
 
 function handleTick(event) {
+    //pause for debugging (!!! not a toggle !!!)
+    if (keys[32]) return;
+
     playerSquare.acceleration = 0;
 
     //calculate acceleration of player based on pressed keys
@@ -149,13 +154,23 @@ function randomlyGenerateSplitter() {
     }
 }
 
+var lastSplitterX = 0;
 function addSplitter() {
     //create a new enemy
     var splitter = new createjs.Shape();
     splitter.velocity = 500;
     splitter.graphics.beginFill("#D70230");
-    var startingXLocation = Math.floor(Math.random() * stage.width - enemyWidth/2);
+
+    //calculates how wide the stage is in splitter width terms (18 splitters wide)
+    //this is so that splitters can only spawn at certain x coords
+    //i.e. | | | | |V| | | |    --- like lanes, that splitters can spawn in
+    //this fixes an issue where splitters would spawn overlapping each other
+    var widthInSplitters = stage.width / enemyWidth;
+    var startingXLocation = Math.floor(Math.random() * widthInSplitters - 1) * enemyWidth;
+    lastSplitterX = startingXLocation;
     var startingYLocation = enemyHeight * -1;
+    //draw splitter triangle
+    //should this be moved into a function? (is there really no draw triangle function!?)
     splitter.graphics.moveTo((startingXLocation + enemyWidth/2), startingYLocation + enemyHeight)  //bottom
         .lineTo(startingXLocation, startingYLocation) //top left
         .lineTo((startingXLocation + enemyWidth), startingYLocation) //top right
