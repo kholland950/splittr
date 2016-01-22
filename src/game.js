@@ -89,6 +89,9 @@ function moveObjectVertical(object, acceleration, time) {
 }
 
 function handleTick(event) {
+    //pause for debugging (!!! not a toggle !!!)
+    if (keys[32]) return;
+
     playerSquare.acceleration = 0;
 
     //calculate acceleration of player based on pressed keys
