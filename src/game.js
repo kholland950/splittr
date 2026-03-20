@@ -1,18 +1,19 @@
 /**
  * Created by kevinholland on 1/9/16.
+ * Modified to support infinite recursive splitting
  */
 
 var keys = {};
 
-var playerAccel = 3000; //.4
+var playerAccel = 3000;
 var playerDecel = 400;
 
 var enemyWidth = 60;
 var enemyHeight = 50;
 var gravity = 750;
 
-var defaultPlayerHeight = 80;
-var defaultPlayerWidth = 20;
+var defaultPlayerHeight = 120;
+var defaultPlayerWidth = 40;
 var defaultPlayerMass = 4;
 
 var splitters;
@@ -29,8 +30,54 @@ var playerBoxes = [];
 var points = 0;
 var pointText;
 
+// Key pairs for controlling boxes: [leftKey, rightKey]
+// Each pair is {left: {code, label}, right: {code, label}}
+var keyPairPool = [
+    {left: {code: 68, label: "D"}, right: {code: 70, label: "F"}},
+    {left: {code: 74, label: "J"}, right: {code: 75, label: "K"}},
+    {left: {code: 65, label: "A"}, right: {code: 83, label: "S"}},
+    {left: {code: 76, label: "L"}, right: {code: 186, label: ";"}},
+    {left: {code: 81, label: "Q"}, right: {code: 87, label: "W"}},
+    {left: {code: 79, label: "O"}, right: {code: 80, label: "P"}},
+    {left: {code: 69, label: "E"}, right: {code: 82, label: "R"}},
+    {left: {code: 85, label: "U"}, right: {code: 73, label: "I"}},
+    {left: {code: 84, label: "T"}, right: {code: 89, label: "Y"}},
+    {left: {code: 71, label: "G"}, right: {code: 72, label: "H"}},
+    {left: {code: 90, label: "Z"}, right: {code: 88, label: "X"}},
+    {left: {code: 66, label: "B"}, right: {code: 78, label: "N"}},
+    {left: {code: 67, label: "C"}, right: {code: 86, label: "V"}},
+    {left: {code: 77, label: "M"}, right: {code: 188, label: ","}},
+    {left: {code: 49, label: "1"}, right: {code: 50, label: "2"}},
+    {left: {code: 51, label: "3"}, right: {code: 52, label: "4"}},
+    {left: {code: 53, label: "5"}, right: {code: 54, label: "6"}},
+    {left: {code: 55, label: "7"}, right: {code: 56, label: "8"}},
+    {left: {code: 57, label: "9"}, right: {code: 48, label: "0"}},
+    {left: {code: 189, label: "-"}, right: {code: 187, label: "="}},
+    {left: {code: 219, label: "["}, right: {code: 221, label: "]"}},
+    {left: {code: 190, label: "."}, right: {code: 191, label: "/"}},
+    {left: {code: 222, label: "'"}, right: {code: 220, label: "\\"}},
+];
+var nextKeyPairIndex = 0;
+
+// Colors for boxes - cycle through these
+var splitImmunityTime = 500; // milliseconds of immunity after being split
+
+
+function getNextKeyPair() {
+    if (nextKeyPairIndex < keyPairPool.length) {
+        return keyPairPool[nextKeyPairIndex++];
+    }
+    // If we run out of predefined keys, generate numbered ones
+    // These won't actually work as controls, but the chaos is the point
+    var n = nextKeyPairIndex - keyPairPool.length;
+    nextKeyPairIndex++;
+    return {
+        left: {code: -1, label: "?" + (n*2)},
+        right: {code: -1, label: "?" + (n*2+1)}
+    };
+}
+
 function init() {
-    //Create a stage by getting a reference to the canvas
     stage = new createjs.Stage("game-canvas");
     stage.canvas.width = window.innerWidth;
     stage.canvas.height = window.innerHeight;
@@ -56,7 +103,6 @@ function init() {
 
     createjs.Touch.enable(stage);
 
-    //Update stage will render next frame
     createjs.Ticker.addEventListener("tick", handleTick);
     createjs.Ticker.setFPS(FPS);
 
@@ -73,26 +119,26 @@ function keyup(event) {
 }
 
 function handleTick(event) {
-    //pause for debugging (!!! not a toggle !!!)
-    if (keys[32]) return;
+    if (keys[32]) return; // pause
 
     if (playerBoxes.length > 0) {
-        playerBoxes[0].acceleration = 0;
-        if (playerBoxes.length > 1) playerBoxes[1].acceleration = 0;
-
-        //calculate acceleration of player based on pressed keys
-        if (keys[68] || (mousedown && mouseX < stage.width / 2)) playerBoxes[0].acceleration -= playerAccel;
-        if (keys[70] || (mousedown && mouseX > stage.width / 2)) playerBoxes[0].acceleration += playerAccel;
-        if (keys[74] && playerBoxes.length > 1) playerBoxes[1].acceleration -= playerAccel;
-        if (keys[75] && playerBoxes.length > 1) playerBoxes[1].acceleration += playerAccel;
-
-        //moving right = positive velocity
-        //moving left = negative velocity
-        //positive velocity -> negative acceleration (due to friction)
-        //negative velocity -> positive acceleration (due to friction)
+        // Reset all accelerations and apply key inputs
         for (var i = 0; i < playerBoxes.length; i++) {
-            playerBoxes[i].acceleration -= playerDecel * getSign(playerBoxes[i].velocity);
-            movePlayerBox(playerBoxes[i], playerBoxes[i].acceleration, event.delta/1000);
+            var box = playerBoxes[i];
+            box.acceleration = 0;
+
+            // Check this box's assigned keys
+            if (box.keyPair) {
+                if (keys[box.keyPair.left.code]) box.acceleration -= playerAccel;
+                if (keys[box.keyPair.right.code]) box.acceleration += playerAccel;
+            }
+
+            // Apply friction and move
+            box.acceleration -= playerDecel * getSign(box.velocity);
+            movePlayerBox(box, box.acceleration, event.delta/1000);
+
+            // Update the label position to follow the box
+            updateBoxLabel(box);
         }
 
         points += 1;
@@ -105,16 +151,21 @@ function handleTick(event) {
     stage.update();
 }
 
+function updateBoxLabel(box) {
+    if (box.label) {
+        // Position label centered on the box
+        var boxX = box.x + box.graphics.command.x;
+        var boxY = box.graphics.command.y;
+        var boxW = box.graphics.command.w;
+        var boxH = box.graphics.command.h;
+
+        box.label.x = boxX + boxW / 2;
+        box.label.y = boxY + boxH / 2 - 6;
+    }
+}
+
 function movePlayerBox(box, acceleration, time) {
-    //get next potential spot
     var newPos = (.5 * acceleration * Math.pow(time,2)) + box.velocity * time + box.x;
-
-    //if this spot is a collision
-    //get the new acceleration
-    //calculate the new "next position"
-
-    // set new position
-    // calculate and set new velocity
 
     if (willBeInBounds(box, newPos)) {
         return;
@@ -131,16 +182,14 @@ function moveObjectVertical(object, acceleration, time) {
 }
 
 function addPlayerBox(mass, xPos, velocity) {
-    velocity = velocity || 0; //set velocity to 0 if not passed
+    velocity = velocity || 0;
 
-    //create a square object
     var playerSquare = new createjs.Shape();
-
     var width = defaultPlayerWidth * mass;
     playerSquare.graphics.beginFill("#115B89").drawRect(
         xPos,
         stage.height - defaultPlayerHeight - 10,
-        defaultPlayerWidth * mass,
+        width,
         defaultPlayerHeight
     );
     playerSquare.leftBound = (xPos * -1) - width/2;
@@ -148,8 +197,30 @@ function addPlayerBox(mass, xPos, velocity) {
     playerSquare.velocity = velocity;
     playerSquare.mass = mass;
 
+    // Assign key pair
+    var keyPair = getNextKeyPair();
+    playerSquare.keyPair = keyPair;
+
+    // Create label showing the keys
+    var labelText = "\u2190" + keyPair.left.label + "  " + keyPair.right.label + "\u2192";
+    var fontSize = Math.max(12, Math.min(28, width / 2.5));
+    var label = new createjs.Text(labelText, "bold " + fontSize + "px monospace", "#FFFFFF");
+    label.textAlign = "center";
+    label.textBaseline = "middle";
+    label.mouseEnabled = false;
+    playerSquare.label = label;
+
+    // Immunity timer - box flashes while immune
+    playerSquare.immuneUntil = createjs.Ticker.getTime() + splitImmunityTime;
+
     playerBoxes.push(playerSquare);
     stage.addChild(playerSquare);
+    stage.addChild(label);
+
+    // Initial label position
+    updateBoxLabel(playerSquare);
+
+    return playerSquare;
 }
 
 function willBeInBounds(object, nextPos) {
@@ -177,38 +248,27 @@ function randomlyGenerateSplitter() {
 
 var lastSplitterX = 0;
 function addSplitter() {
-    //create a new enemy
     var splitter = new createjs.Shape();
     splitter.velocity = 500;
     splitter.graphics.beginFill("#D70230");
 
-    //calculates how wide the stage is in splitter width terms (18 splitters wide)
-    //this is so that splitters can only spawn at certain x coords
-    //i.e. | | | | |V| | | |    --- like lanes, that splitters can spawn in
-    //this fixes an issue where splitters would spawn overlapping each other
     var widthInSplitters = stage.width / enemyWidth;
     var startingXLocation = Math.floor(Math.random() * widthInSplitters - 1) * enemyWidth + enemyWidth/2;
     splitter.startingXLocation = startingXLocation;
     lastSplitterX = startingXLocation;
     var startingYLocation = enemyHeight * -1;
-    //draw splitter triangle
-    //should this be moved into a function? (is there really no draw triangle function!?)
     splitter.x = startingXLocation;
     splitter.y = startingYLocation;
     splitter.graphics.moveTo(0,0)
         .lineTo(enemyWidth/2, enemyHeight * -1)
         .lineTo(enemyWidth/2*-1, enemyHeight * -1)
-        .lineTo(0,0);//(enemyWidth/2), enemyHeight)  //bottom
-        //.lineTo(0, 0) //top left
-        //.lineTo(enemyWidth, 0) //top right
-        //.lineTo(enemyWidth/2 + enemyHeight); //bottom
+        .lineTo(0,0);
     stage.addChild(splitter);
     splitters.push(splitter);
 }
 
 function moveSplitters(event) {
     for (var i = 0; i < splitters.length; i++) {
-        //if splitter is on screen
         if (splitters[i].y - enemyHeight < stage.height) {
             moveObjectVertical(splitters[i], gravity, event.delta);
             var hitIndex = splitterHitPlayerBox(splitters[i]);
@@ -221,9 +281,16 @@ function moveSplitters(event) {
     }
 }
 
-//returns index in playerBoxes of box hit, or -1 if no boxes hit
 function splitterHitPlayerBox(splitter) {
+    var now = createjs.Ticker.getTime();
     for (var i = 0; i < playerBoxes.length; i++) {
+        // Skip immune boxes
+        if (playerBoxes[i].immuneUntil && now < playerBoxes[i].immuneUntil) {
+            // Flash effect while immune
+            playerBoxes[i].alpha = (Math.floor(now / 60) % 2 === 0) ? 0.3 : 1.0;
+            continue;
+        }
+        playerBoxes[i].alpha = 1.0;
         var pt = splitter.localToLocal(0, 0, playerBoxes[i]);
         if (playerBoxes[i].hitTest(pt.x, pt.y)) {
             return i;
@@ -233,14 +300,24 @@ function splitterHitPlayerBox(splitter) {
 }
 
 function splitPlayerBox(index) {
-    stage.removeChild(playerBoxes[index]);
-    //change alpha for debugging, split doesn't happen yet
-    if (playerBoxes[index].mass > 2 && playerBoxes.length == 1) { //split box
-        var pt = playerBoxes[index].localToGlobal(stage.width/2, 0);
-        addPlayerBox(playerBoxes[index].mass / 2, pt.x - enemyWidth/2, -300);
-        addPlayerBox(playerBoxes[index].mass / 2, pt.x + enemyWidth/2, 300);
-        playerBoxes.shift();
-    } else {
-        playerBoxes.splice(index, 1);
+    var oldBox = playerBoxes[index];
+    stage.removeChild(oldBox);
+    // Remove the label too
+    if (oldBox.label) {
+        stage.removeChild(oldBox.label);
     }
+
+    var minMass = 0.5; // Minimum mass before box is destroyed
+
+    if (oldBox.mass > minMass) {
+        // Always split! No limit on number of boxes
+        var pt = oldBox.localToGlobal(stage.width/2, 0);
+        var newMass = oldBox.mass / 2;
+        var splitOffset = Math.max(enemyWidth / 3, defaultPlayerWidth * newMass);
+
+        addPlayerBox(newMass, pt.x - splitOffset, -300);
+        addPlayerBox(newMass, pt.x + splitOffset, 300);
+    }
+    // Remove old box from array
+    playerBoxes.splice(index, 1);
 }
