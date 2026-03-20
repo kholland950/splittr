@@ -1,0 +1,62 @@
+src/constants.js
+  f220673041179331 4-5,11-12,20-21,65-66
+src/input.js
+  fb4ec3df2c387299 58
+src/personality.js
+  f220673041179331 1-715
+src/player.js
+  f220673041179331 1,10-12,273-277,279-284,316-331,333-340,344-362,364,367,369-386,388-389,391,394,396-397,415-429,436-444,446-454,470-471,473,475-486,488,498-507,511,515,520
+src/game.js
+  25bc3e655eb51404 20,41,238,360,377,390,457-480,529-531,539-541
+  f220673041179331 7-8,39-40,248-249,322-329,347,355-356,372-373,384,484-492,535-537
+src/soul-orb.js
+  25bc3e655eb51404 1-651
+src/audio.js
+  25bc3e655eb51404 293-365
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "dc608f522f3c6faa461a66765d33dcd5f8c907ef",
+  "prompts": {
+    "25bc3e655eb51404": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3989f2d-5e26-4d8f-95d0-15ec8b9f3e6d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 761,
+      "total_deletions": 1,
+      "accepted_lines": 760,
+      "overriden_lines": 0
+    },
+    "f220673041179331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b0c50d8-33c9-469a-9e07-d828abedc504",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 981,
+      "total_deletions": 104,
+      "accepted_lines": 913,
+      "overriden_lines": 0
+    },
+    "fb4ec3df2c387299": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98f530c8-e083-4aea-b286-01133e32ef28",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
