@@ -119,6 +119,30 @@ const SKINS = [
     bgTriangleColor: '#b967ff',
   },
   {
+    name: 'Capybara',
+    secret: true,
+    playerHue: 30,
+    playerColor: '#c4956a',
+    playerGlow: '#d4a574',
+    triangleColor: '#ff6b35',
+    triangleGradientTop: '#ff9966',
+    triangleGradientBottom: '#cc4400',
+    triangleGlow: '#ff6b35',
+    triangleBorder: 'rgba(255, 107, 53, 0.5)',
+    fastGlow: '#ff8844',
+    fastGradientTop: '#ffaa77',
+    fastGradientMid: '#ff7733',
+    fastGradientBottom: '#cc5500',
+    backgroundColor: '#2d5016',
+    backgroundCenter: '#3a6b1e',
+    gridColor: 'rgba(196, 149, 106, 0.05)',
+    textColor: '#f5e6d0',
+    accentColor: '#c4956a',
+    accentRgb: '196, 149, 106',
+    dangerGlow: 'rgba(255, 107, 53, 0.06)',
+    bgTriangleColor: '#ff6b35',
+  },
+  {
     name: 'Ice',
     playerHue: 200,
     playerColor: '#e0f0ff',
@@ -143,23 +167,55 @@ const SKINS = [
   },
 ];
 
+const UNLOCK_STORAGE_KEY = 'splittr-unlocked-skins';
 let _currentIndex = 0;
+let _unlockedSecrets = new Set();
 
-// Load saved skin on module init
+// Load saved state on module init
 try {
   const saved = localStorage.getItem(SKIN_STORAGE_KEY);
   if (saved !== null) {
     const idx = SKINS.findIndex(s => s.name === saved);
     if (idx >= 0) _currentIndex = idx;
   }
+  const unlocked = localStorage.getItem(UNLOCK_STORAGE_KEY);
+  if (unlocked) _unlockedSecrets = new Set(JSON.parse(unlocked));
 } catch (_) { /* localStorage unavailable */ }
+
+function _isAvailable(skin) {
+  return !skin.secret || _unlockedSecrets.has(skin.name);
+}
+
+export function unlockSkin(name) {
+  const skin = SKINS.find(s => s.name === name);
+  if (!skin || !skin.secret) return false;
+  if (_unlockedSecrets.has(name)) return false;
+  _unlockedSecrets.add(name);
+  try {
+    localStorage.setItem(UNLOCK_STORAGE_KEY, JSON.stringify([..._unlockedSecrets]));
+  } catch (_) { /* localStorage unavailable */ }
+  return true; // newly unlocked
+}
+
+export function isSkinUnlocked(name) {
+  const skin = SKINS.find(s => s.name === name);
+  if (!skin) return false;
+  return _isAvailable(skin);
+}
 
 export function getCurrentSkin() {
   return SKINS[_currentIndex];
 }
 
 export function cycleSkin() {
-  _currentIndex = (_currentIndex + 1) % SKINS.length;
+  // Skip locked secret skins
+  let next = (_currentIndex + 1) % SKINS.length;
+  let attempts = 0;
+  while (!_isAvailable(SKINS[next]) && attempts < SKINS.length) {
+    next = (next + 1) % SKINS.length;
+    attempts++;
+  }
+  _currentIndex = next;
   try {
     localStorage.setItem(SKIN_STORAGE_KEY, SKINS[_currentIndex].name);
   } catch (_) { /* localStorage unavailable */ }
@@ -167,6 +223,10 @@ export function cycleSkin() {
 }
 
 export function getSkinCount() {
+  return SKINS.filter(s => _isAvailable(s)).length;
+}
+
+export function getTotalSkinCount() {
   return SKINS.length;
 }
 

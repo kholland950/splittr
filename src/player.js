@@ -28,7 +28,7 @@ export class PlayerBox {
     this.mergeTargetX = 0; // x position to slide toward
   }
 
-  update(dt, input, canvasWidth) {
+  update(dt, input, canvasWidth, touchInput) {
     // If merging, slide toward target and skip normal controls
     if (this.merging) {
       const diff = this.mergeTargetX - this.x;
@@ -43,6 +43,12 @@ export class PlayerBox {
     let accel = 0;
     if (input.isDown(this.keyPair.left)) accel -= PLAYER_ACCEL;
     if (input.isDown(this.keyPair.right)) accel += PLAYER_ACCEL;
+
+    // Touch input (for mobile — only the selected box gets this)
+    if (touchInput) {
+      const dir = touchInput.getDirection();
+      if (dir !== 0) accel += dir * PLAYER_ACCEL;
+    }
 
     // Gamepad input (additive to keyboard)
     if (this._gamepadIndex >= 0) {

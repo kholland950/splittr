@@ -16,8 +16,9 @@ import {
   TRIANGLE_COLUMN_COOLDOWN_MS, BOX_COLLISION_DAMPING,
   HEART_SHIELD_DURATION_MS, SPLIT_IMMUNITY_MS,
 } from './constants.js';
-import { cycleSkin } from './skins.js';
+import { cycleSkin, unlockSkin } from './skins.js';
 import { SoulOrbSystem } from './soul-orb.js';
+import { TouchManager } from './touch.js';
 
 const State = {
   READY: 'READY',
@@ -39,6 +40,7 @@ class Game {
     this.personality = new PersonalitySystem();
     setPersonalitySystem(this.personality);
     this.soulOrbs = new SoulOrbSystem();
+    this.touch = new TouchManager(canvas);
 
     this.state = State.READY;
     this.boxes = [];
@@ -119,7 +121,7 @@ class Game {
           cycleSkin();
           this.input.clear();
           this._stateJustChanged = true;
-        } else if (this.input.anyKeyPressed() && !this._stateJustChanged) {
+        } else if ((this.input.anyKeyPressed() || this.touch.consumeTap()) && !this._stateJustChanged) {
           this._startGame();
         }
         this._stateJustChanged = false;
@@ -137,7 +139,7 @@ class Game {
           this.renderer.ctx, this.renderer.width, this.renderer.height,
           this.finalScore, now, this._deathRank
         );
-        if (this.input.anyKeyPressed() && !this._stateJustChanged) {
+        if ((this.input.anyKeyPressed() || this.touch.consumeTap()) && !this._stateJustChanged) {
           this.input.clear();
           this.state = State.READY;
           this._stateJustChanged = true;
@@ -179,7 +181,7 @@ class Game {
           this.state = State.READY;
           this._stateJustChanged = true;
           this.ui.resetReadyScreen();
-        } else if (this.input.anyKeyPressed() && !this._stateJustChanged) {
+        } else if ((this.input.anyKeyPressed() || this.touch.consumeTap()) && !this._stateJustChanged) {
           this.input.clear();
           this.state = State.READY;
           this._stateJustChanged = true;
@@ -246,6 +248,7 @@ class Game {
     this._stateJustChanged = true;
     this._lastScoreAnnounce = 0;
     this._lastCelebration = 0;
+    this._capybaraUnlocked = false;
     this.personality.onGameStart(this.boxes);
     announce('Game started. Use ' + keyPair.leftLabel + ' and ' + keyPair.rightLabel + ' to move.');
   }
@@ -260,9 +263,19 @@ class Game {
       announceScore(scoreInt + ' seconds. ' + this.boxes.length + ' boxes.');
     }
 
-    // Update boxes
-    for (const box of this.boxes) {
-      box.update(dt, this.input, this.renderer.width);
+    // Secret capybara skin unlock at 10s
+    if (this.elapsedTime >= 10 && !this._capybaraUnlocked) {
+      this._capybaraUnlocked = true;
+      if (unlockSkin('Capybara')) {
+        this.personality.triggerCelebration(now);
+        announce('Secret skin unlocked: Capybara!');
+      }
+    }
+
+    // Update boxes — on mobile, only the selected box responds to touch
+    for (let i = 0; i < this.boxes.length; i++) {
+      const box = this.boxes[i];
+      box.update(dt, this.input, this.renderer.width, this.touch.isMobile && i === this.touch.activeBoxIndex ? this.touch : null);
     }
 
     // Box-to-box collisions (skip merging boxes)
@@ -534,6 +547,9 @@ class Game {
 
     // Kawaii personality: sparkles, speech bubbles, anime text
     this.personality.render(ctx, this.boxes);
+
+    // Mobile touch controls overlay
+    this.touch.render(ctx, this.renderer.width, this.renderer.height, this.boxes);
 
     this.ui.renderScore(ctx, this.elapsedTime, this.renderer.width);
 

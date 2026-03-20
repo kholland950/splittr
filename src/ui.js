@@ -239,7 +239,8 @@ export class UI {
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
       ctx.shadowBlur = 8;
-      ctx.fillText('PRESS ANY KEY', canvasWidth / 2, canvasHeight * 2 / 3);
+      const isMobile = 'ontouchstart' in window;
+      ctx.fillText(isMobile ? 'TAP TO START' : 'PRESS ANY KEY', canvasWidth / 2, canvasHeight * 2 / 3);
       ctx.restore();
     }
 
@@ -444,7 +445,8 @@ export class UI {
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
       ctx.shadowBlur = 6;
-      ctx.fillText('PRESS ANY KEY TO RETRY', canvasWidth / 2, canvasHeight * 0.78);
+      const isMobile2 = 'ontouchstart' in window;
+      ctx.fillText(isMobile2 ? 'TAP TO RETRY' : 'PRESS ANY KEY TO RETRY', canvasWidth / 2, canvasHeight * 0.78);
       ctx.restore();
     }
   }
