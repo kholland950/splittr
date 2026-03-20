@@ -1,0 +1,23 @@
+src/game.js
+  43f6a6074b08f2dd 19-20,98,141,143-148,191,193,207,209-210,235-287,348-350,352-356,359-383,397,402-404
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "245e4bdd6ce91d174725fd71f6e30ac67296fcd6",
+  "prompts": {
+    "43f6a6074b08f2dd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e27ed7d6-3e96-411e-a96f-81d7f4d2c548",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 107,
+      "total_deletions": 22,
+      "accepted_lines": 105,
+      "overriden_lines": 0
+    }
+  }
+}
