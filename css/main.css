@@ -1,12 +1,18 @@
-body {
-    background-color: #000;
-    margin: 0;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.over {
-    position: fixed;
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0e27;
 }
 
 #game-canvas {
-    background-color: #FFEDD1;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
