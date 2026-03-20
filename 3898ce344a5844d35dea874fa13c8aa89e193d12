@@ -1,0 +1,37 @@
+src/player.js
+  fb4ec3df2c387299 31,47-51
+src/ui.js
+  fb4ec3df2c387299 242-243,448-449
+src/touch.js
+  fb4ec3df2c387299 1-195
+css/main.css
+  fb4ec3df2c387299 18-29
+index.html
+  fb4ec3df2c387299 5
+src/game.js
+  fb4ec3df2c387299 19,21,43,124,142,184,251,266-278,551-553
+src/difficulty.js
+  fb4ec3df2c387299 1,10,13-14,17-29
+src/skins.js
+  fb4ec3df2c387299 122-144,170,172,174,181-182,185-205,211-218,226-229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "3898ce344a5844d35dea874fa13c8aa89e193d12",
+  "prompts": {
+    "fb4ec3df2c387299": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98f530c8-e083-4aea-b286-01133e32ef28",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 321,
+      "total_deletions": 16,
+      "accepted_lines": 321,
+      "overriden_lines": 0
+    }
+  }
+}
