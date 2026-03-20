@@ -1,0 +1,93 @@
+docs/splittr-rewrite-qa-plan.md
+  0463d7db1b0cafa2 1-521
+docs/plans/2026-03-19-splittr-rewrite.md
+  3b61a2c3e312ee6e 1-1672
+src/player.js
+  9cadc1aa02f5e988 89-90,92,96-113,115-121,123-131,142-149,153-165
+src/particles.js
+  9cadc1aa02f5e988 1-144
+index.html
+  fb4ec3df2c387299 11-24
+src/game.js
+  9cadc1aa02f5e988 8,23,30,44,48,63,67-68,77,93,97,157-160,180-181,183,185-186,191,194,205,217-219,229,239-240
+src/renderer.js
+  9cadc1aa02f5e988 1,15-16,28,30,33,36-39,41-44,53-60,63-64,67-68,75-77,83-89
+src/triangle.js
+  9cadc1aa02f5e988 9,14,35-64,66-68,71-80
+src/ui.js
+  9cadc1aa02f5e988 1,7-8,13-17,23-32,36-49,53-97,100-109,112-141,145-156,159-162,164-170,175-176,178,180-190,195,197-199,203-214,216-220,222-223
+docs/plans/2026-03-19-splittr-rewrite-design.md
+  aa2863b2dc31b1a9 1-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "43c157c23ab04087cf5d49fe75c3746d937cab75",
+  "prompts": {
+    "0463d7db1b0cafa2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7c1e5c45-0d17-4c41-a942-1708ef109b0d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 521,
+      "overriden_lines": 0
+    },
+    "3b61a2c3e312ee6e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f6adc749-9dfc-4bf3-8c71-2da202d10fab",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1672,
+      "overriden_lines": 0
+    },
+    "9cadc1aa02f5e988": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4e2e52f3-c357-42ef-b7ac-943c763204fa",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 509,
+      "total_deletions": 71,
+      "accepted_lines": 499,
+      "overriden_lines": 0
+    },
+    "aa2863b2dc31b1a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "039b2d40-1a97-4c90-8aba-b5515ad1324f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 217,
+      "overriden_lines": 0
+    },
+    "fb4ec3df2c387299": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98f530c8-e083-4aea-b286-01133e32ef28",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 18,
+      "total_deletions": 4,
+      "accepted_lines": 15,
+      "overriden_lines": 0
+    }
+  }
+}
