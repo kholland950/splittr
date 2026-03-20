@@ -1,0 +1,155 @@
+src/leaderboard.js
+  419180946d43ad6f 1-59
+index.html
+  5fbd132b44caf0e9 6-8,12-38
+src/audio.js
+  38aeaecbc24e3277 1-219,257-296
+  49775453e0528182 220-256
+src/skins.js
+  bbcb2fb7c64d5a0d 1-175
+src/renderer.js
+  5fbd132b44caf0e9 7,78,84
+  419180946d43ad6f 113-114,120-121
+  38aeaecbc24e3277 1,4,9-38,49-51,53,62-74,83,85,91-94,115,125-128,155-162
+  bbcb2fb7c64d5a0d 6,132,151-152
+src/particles.js
+  5fbd132b44caf0e9 2,43,65,87,110,123
+  49775453e0528182 85-86,88-109,111-120
+css/main.css
+  5fbd132b44caf0e9 19-67
+src/player.js
+  fb4ec3df2c387299 207-213,223,226,229-234,268-269,272,274-276,302-341,343-402
+  49775453e0528182 6,23-24,28-38
+  bbcb2fb7c64d5a0d 8,154-155,240,253,342
+  38aeaecbc24e3277 1,5,20-22,44-48,74-89,105,114,133-135,140-146,188-201,214-215,235-239,241-252,254-267,270-271,273,280-301,420
+src/constants.js
+  fb4ec3df2c387299 4-13,20-22,39-43,71-77,80-83,87-88
+  38aeaecbc24e3277 15-17,23-29,46-53,60,68-69
+  419180946d43ad6f 90-95
+  49775453e0528182 30-35
+src/ui.js
+  bbcb2fb7c64d5a0d 3,130,134,137,145,156,159,238,246,256,270,272,279,289,301,406,563-564,568,576,578,589,626,633,646,649,664,726,756
+  419180946d43ad6f 2,45-46,62-70,207-208,225,247-254,257-259,316,350-368,370-371,379-380,386-387,390,448-562,565-567,569-575,577,579-588,590-625,627-632,634-645,647-648,650-663,665-725,727-755,757-783,805-809
+  fb4ec3df2c387299 260-269,271,273-278,280-288,290-298
+  342872f22712f79c 255
+  38aeaecbc24e3277 1,5-38,47-61,71-125,395-405,407-430,432,437-438,447
+src/accessibility.js
+  5fbd132b44caf0e9 1-38
+src/input.js
+  49775453e0528182 49,61,69-70,77
+  fb4ec3df2c387299 2,8-12,37-48,50-58,62-68,75-76,78-79
+  38aeaecbc24e3277 1,13-14,30,80-112
+src/game.js
+  bbcb2fb7c64d5a0d 18,113-116,435-442
+  419180946d43ad6f 11,23-25,48-50,56-73,103-108,133,141-177,208-216,230-232,447-451,453-454,456
+  342872f22712f79c 10,35,94-102,109-112,117,187-189,221,313,340,364-365
+  fb4ec3df2c387299 53-55,190-203,342,344-360
+  5fbd132b44caf0e9 2,140,241-242,248-254,452,455
+  49775453e0528182 16,46-47,225,260,263,288,304-306,308,329-334,391-431,477-533
+src/achievements.js
+  342872f22712f79c 1-443
+docs/accessibility-audit.md
+  5fbd132b44caf0e9 1-204
+src/triangle.js
+  bbcb2fb7c64d5a0d 7,97,99,104-106,132,269,271,282,286-288,301
+  49775453e0528182 3,5,35-39,56-59,85-87,196-267,347-350,352,354,356
+  38aeaecbc24e3277 1,4,10,13,15-34,40-50,63,72-74,80,82-84,88-94,96,103,112-113,120-122,126-127,136-195,268,270,272-281,283-285,289-300,305-306,312-313,317-334,339,343-346,351,353,355,357-360
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "a791506e65cf45ec806e7acd5a791c4553f174c3",
+  "prompts": {
+    "342872f22712f79c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0de8169e-e1ee-427d-9251-a00d1626fced",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 472,
+      "total_deletions": 5,
+      "accepted_lines": 468,
+      "overriden_lines": 0
+    },
+    "38aeaecbc24e3277": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0fecc635-f207-4333-aba4-58d9c56b14ac",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 885,
+      "total_deletions": 64,
+      "accepted_lines": 856,
+      "overriden_lines": 0
+    },
+    "419180946d43ad6f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbaceaf4-8432-437c-8770-a6058fea2951",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 563,
+      "total_deletions": 29,
+      "accepted_lines": 546,
+      "overriden_lines": 0
+    },
+    "49775453e0528182": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "82fff2fd-0b40-4e77-95f1-88dfc483c438",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 311,
+      "total_deletions": 10,
+      "accepted_lines": 311,
+      "overriden_lines": 0
+    },
+    "5fbd132b44caf0e9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "309e0481-be03-43ca-87c7-f6c00bd4c725",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 343,
+      "total_deletions": 2,
+      "accepted_lines": 343,
+      "overriden_lines": 0
+    },
+    "bbcb2fb7c64d5a0d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d201c0-4aa2-4fc5-bed4-edf1348bc493",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 644,
+      "total_deletions": 72,
+      "accepted_lines": 241,
+      "overriden_lines": 0
+    },
+    "fb4ec3df2c387299": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98f530c8-e083-4aea-b286-01133e32ef28",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 342,
+      "total_deletions": 114,
+      "accepted_lines": 269,
+      "overriden_lines": 0
+    }
+  }
+}
