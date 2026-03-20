@@ -1,0 +1,25 @@
+src/game.js
+  fb4ec3df2c387299 124-128,130,147-153,158,195-199,203,294-308,311-312,320-321,327-330,334-337
+src/triangle.js
+  fb4ec3df2c387299 318-331,337-339
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "3ae821613c5d7a3821efd7c179e3226ffb604249",
+  "prompts": {
+    "fb4ec3df2c387299": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98f530c8-e083-4aea-b286-01133e32ef28",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 88,
+      "total_deletions": 37,
+      "accepted_lines": 64,
+      "overriden_lines": 0
+    }
+  }
+}
