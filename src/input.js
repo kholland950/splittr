@@ -55,7 +55,7 @@ export class InputManager {
     // Last resort: pull from whichever side has keys left
     if (this._nextLeftIndex < KEY_PAIRS_LEFT.length) return KEY_PAIRS_LEFT[this._nextLeftIndex++];
     if (this._nextRightIndex < KEY_PAIRS_RIGHT.length) return KEY_PAIRS_RIGHT[this._nextRightIndex++];
-    return KEY_PAIRS[0]; // absolute fallback
+    return null; // no keys available — caller should destroy the box
   }
 
   returnKeyPair(pair) {

@@ -1,15 +1,15 @@
 // src/constants.js — All tunable game values in one place
 
 // Player
-export const PLAYER_WIDTH = 120;
-export const PLAYER_HEIGHT = 90;
+export const PLAYER_WIDTH = 180;
+export const PLAYER_HEIGHT = 135;
 export const PLAYER_ACCEL = 5000;
 export const PLAYER_FRICTION = 300;
 export const PLAYER_WALL_BOUNCE = 0.5;
 export const MAX_SPLIT_DEPTH = 4; // limited naturally by 5 home-row key pairs
 export const SPLIT_IMMUNITY_MS = 350;
-export const SPLIT_FLY_APART_MULTIPLIER = 1.8;
-export const SPLIT_INITIAL_VELOCITY = 450;
+export const SPLIT_FLY_APART_MULTIPLIER = 2.0;
+export const SPLIT_INITIAL_VELOCITY = 550;
 export const BOX_COLLISION_DAMPING = 0.75;
 
 // Player trail
@@ -17,8 +17,8 @@ export const TRAIL_SPEED_THRESHOLD = 200;
 export const TRAIL_MAX_LENGTH = 12;
 
 // Triangles
-export const TRIANGLE_WIDTH = 55;
-export const TRIANGLE_HEIGHT = 48;
+export const TRIANGLE_WIDTH = 80;
+export const TRIANGLE_HEIGHT = 70;
 export const TRIANGLE_COLUMN_COOLDOWN_MS = 350;
 
 // Triangle variety
@@ -62,8 +62,8 @@ export const COLOR_TEXT = '#ffffff';
 export const COLOR_TEXT_DIM = 'rgba(255, 255, 255, 0.5)';
 
 // Screen shake
-export const SHAKE_DURATION_MS = 67; // ~4 frames at 60fps
-export const SHAKE_MAGNITUDE = 4;
+export const SHAKE_DURATION_MS = 80; // ~5 frames at 60fps
+export const SHAKE_MAGNITUDE = 6;
 
 // Background particles
 export const BG_PARTICLE_COUNT = 40;

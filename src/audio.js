@@ -290,6 +290,79 @@ export class AudioManager {
     noise.stop(now + 0.5);
   }
 
+  // Soul orb collect — ethereal rising ding, pitch increases with count
+  playSoulOrbCollect(orbCount) {
+    if (!this._initialized) return;
+    const ctx = this._ctx;
+    const now = ctx.currentTime;
+
+    // Base frequency rises with each orb collected
+    const baseFreq = 600 + orbCount * 200;
+
+    // Ethereal sine tone
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.8, now + 0.15);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.connect(gain);
+    gain.connect(this._masterGain);
+    osc.start(now);
+    osc.stop(now + 0.3);
+
+    // Shimmery harmonic
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(baseFreq * 1.5, now);
+    osc2.frequency.exponentialRampToValueAtTime(baseFreq * 3, now + 0.1);
+    gain2.gain.setValueAtTime(0.08, now);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    osc2.connect(gain2);
+    gain2.connect(this._masterGain);
+    osc2.start(now);
+    osc2.stop(now + 0.2);
+  }
+
+  // Soul orb merge — dramatic power chord + ascending sweep
+  playSoulOrbMerge() {
+    if (!this._initialized) return;
+    const ctx = this._ctx;
+    const now = ctx.currentTime;
+
+    // Power chord — multiple tones
+    const notes = [220, 330, 440, 660, 880];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = i < 2 ? 'sawtooth' : 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 2, now + 0.4);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.12, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc.connect(gain);
+      gain.connect(this._masterGain);
+      osc.start(now);
+      osc.stop(now + 0.6);
+    });
+
+    // Ascending sweep
+    const sweep = ctx.createOscillator();
+    const sweepGain = ctx.createGain();
+    sweep.type = 'sine';
+    sweep.frequency.setValueAtTime(200, now + 0.1);
+    sweep.frequency.exponentialRampToValueAtTime(2000, now + 0.5);
+    sweepGain.gain.setValueAtTime(0.15, now + 0.1);
+    sweepGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+    sweep.connect(sweepGain);
+    sweepGain.connect(this._masterGain);
+    sweep.start(now + 0.1);
+    sweep.stop(now + 0.6);
+  }
+
   resetScoreTone() {
     this._lastScoreTone = 0;
   }

@@ -4,7 +4,8 @@ import { InputManager } from './input.js';
 import { DifficultyManager } from './difficulty.js';
 import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
-import { PlayerBox } from './player.js';
+import { PlayerBox, setPersonalitySystem } from './player.js';
+import { PersonalitySystem } from './personality.js';
 import { Triangle, spawnTriangle } from './triangle.js';
 import { ParticleSystem } from './particles.js';
 import { AchievementTracker } from './achievements.js';
@@ -16,6 +17,7 @@ import {
   HEART_SHIELD_DURATION_MS, SPLIT_IMMUNITY_MS,
 } from './constants.js';
 import { cycleSkin } from './skins.js';
+import { SoulOrbSystem } from './soul-orb.js';
 
 const State = {
   READY: 'READY',
@@ -34,6 +36,9 @@ class Game {
     this.particles = new ParticleSystem();
     this.achievements = new AchievementTracker();
     this.leaderboard = new Leaderboard();
+    this.personality = new PersonalitySystem();
+    setPersonalitySystem(this.personality);
+    this.soulOrbs = new SoulOrbSystem();
 
     this.state = State.READY;
     this.boxes = [];
@@ -230,6 +235,7 @@ class Game {
     this._deathRank = 0;
     this._confirmedRank = 0;
     this._pendingKeys = [];
+    this.soulOrbs.reset();
 
     const startX = this.renderer.width / 2 - PLAYER_WIDTH / 2;
     const startY = this.renderer.height - PLAYER_HEIGHT - 20;
@@ -239,6 +245,8 @@ class Game {
     this.state = State.PLAYING;
     this._stateJustChanged = true;
     this._lastScoreAnnounce = 0;
+    this._lastCelebration = 0;
+    this.personality.onGameStart(this.boxes);
     announce('Game started. Use ' + keyPair.leftLabel + ' and ' + keyPair.rightLabel + ' to move.');
   }
 
@@ -311,6 +319,14 @@ class Game {
       if (tri.isOffScreen(this.renderer.height)) {
         trianglesToRemove.add(t);
         this.achievements.onTriangleDodged();
+        // Check if any box had a close call with this triangle
+        for (const box of this.boxes) {
+          const dist = Math.abs((box.x + box.width / 2) - tri.x);
+          if (dist < box.width * 1.2) {
+            this.personality.onDodge(box);
+            break;
+          }
+        }
         continue;
       }
 
@@ -328,6 +344,7 @@ class Game {
         if (tipHitsBox(tip, boxBounds)) {
           if (tri.variant === 'heart') {
             // Heart triangle — merge or shield
+            this.personality.onHeartPickup(box);
             this._handleHeartCollision(box, b, now);
             trianglesToRemove.add(t);
             break;
@@ -335,9 +352,12 @@ class Game {
           if (box.splitDepth >= MAX_SPLIT_DEPTH) {
             // Destroy — big red particle burst
             this.particles.emitDestroy(box.x, box.y, box.width, box.height);
+            this.personality.onDestroy(box);
+            this.personality.onSiblingDestroyed(this.boxes, box);
             boxesToRemove.push(b);
             this.renderer.triggerShake(now, 1.5);
             this.achievements.onBoxHit();
+            this.soulOrbs.onPlayerHit();
           } else {
             // Split — both children get spatially-matched keys, parent keys returned
             this.particles.emitSplit(box.x, box.y, box.width, box.height);
@@ -349,20 +369,25 @@ class Game {
               if (leftPair) this.input.returnKeyPair(leftPair);
               if (rightPair) this.input.returnKeyPair(rightPair);
               this.particles.emitDestroy(box.x, box.y, box.width, box.height);
+              this.personality.onDestroy(box);
+              this.personality.onSiblingDestroyed(this.boxes, box);
               boxesToRemove.push(b);
               this.renderer.triggerShake(now, 1.5);
               this.achievements.onBoxHit();
+              this.soulOrbs.onPlayerHit();
               trianglesToRemove.add(t);
               break;
             }
             // Override parent keyPair so left child inherits leftPair
             box.keyPair = leftPair;
             const children = box.split(rightPair, now);
+            this.personality.onSplit(box, children);
             boxesToRemove.push(b);
             boxesToAdd.push(...children);
             this.renderer.triggerShake(now, 1);
             this.achievements.onBoxHit();
             this.achievements.onSplit();
+            this.soulOrbs.onPlayerHit();
           }
           trianglesToRemove.add(t);
           break;
@@ -429,8 +454,41 @@ class Game {
       }
     }
 
+    // Soul Orb system update
+    if (!this.soulOrbs.isMerging) {
+      const orbResult = this.soulOrbs.update(
+        dt, now, this.elapsedTime, this.boxes,
+        this.renderer.width, this.renderer.height,
+        this.difficulty, this.particles, this.renderer
+      );
+      if (orbResult === 'merge') {
+        const mergeData = this.soulOrbs.triggerMerge(
+          now, this.boxes, this.particles, this.renderer, this.input
+        );
+        if (mergeData) {
+          this._pendingMerges.push(mergeData);
+        }
+      }
+    } else {
+      // During merge freeze, just update the merge timer
+      this.soulOrbs.update(
+        dt, now, this.elapsedTime, this.boxes,
+        this.renderer.width, this.renderer.height,
+        this.difficulty, this.particles, this.renderer
+      );
+    }
+
     // Update particles
     this.particles.update(dt);
+
+    // Update personality system
+    this.personality.update(dt, now, this.boxes);
+
+    // 30s celebration
+    if (this.elapsedTime >= 30 && (!this._lastCelebration || this.elapsedTime - this._lastCelebration >= 30)) {
+      this._lastCelebration = Math.floor(this.elapsedTime / 30) * 30;
+      this.personality.triggerCelebration(now);
+    }
 
     // Update achievements
     this.achievements.update({
@@ -468,10 +526,19 @@ class Game {
       tri.render(ctx);
     }
 
+    // Render soul orb (between game objects and particles)
+    this.soulOrbs.renderOrb(ctx, now);
+
     // Particles on top of game objects
     this.particles.render(ctx);
 
+    // Kawaii personality: sparkles, speech bubbles, anime text
+    this.personality.render(ctx, this.boxes);
+
     this.ui.renderScore(ctx, this.elapsedTime, this.renderer.width);
+
+    // Soul orb counter at bottom
+    this.soulOrbs.renderCounter(ctx, this.renderer.width, this.renderer.height, now);
   }
 
   _handleHeartCollision(box, boxIndex, now) {

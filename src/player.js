@@ -1,4 +1,4 @@
-// src/player.js — PlayerBox class with trail, speed lines, and shield
+// src/player.js — PlayerBox class with trail, speed lines, shield, and kawaii faces
 import {
   PLAYER_ACCEL, PLAYER_FRICTION, PLAYER_WALL_BOUNCE,
   SPLIT_FLY_APART_MULTIPLIER, SPLIT_INITIAL_VELOCITY,
@@ -6,6 +6,10 @@ import {
   MERGE_SLIDE_SPEED,
 } from './constants.js';
 import { getCurrentSkin } from './skins.js';
+
+// Personality system reference — set externally by game.js
+let _personalitySystem = null;
+export function setPersonalitySystem(ps) { _personalitySystem = ps; }
 
 export class PlayerBox {
   constructor(x, y, width, height, splitDepth, keyPair) {
@@ -266,6 +270,18 @@ export class PlayerBox {
 
   _drawFace(ctx, cx, cy, size, depth, now, shielded) {
     const s = size;
+    const ps = _personalitySystem;
+    const isBlinking = ps ? ps.getBlinkState(this, now) : false;
+    const hasCatMouth = ps ? ps.hasCatMouth(this) : false;
+    const personality = ps ? ps.getPersonality(this) : 'brave';
+    const isCelebrating = ps ? ps.isCelebrating(now) : false;
+
+    // Sleepy personality: half-closed eyes modifier
+    const isSleepy = personality === 'sleepy';
+    // Scared personality: freaks out one depth earlier
+    const effectiveDepth = personality === 'scared' ? Math.min(depth + 1, 5)
+      : personality === 'brave' ? Math.max(depth - 1, 0)
+      : depth;
 
     ctx.save();
 
@@ -297,16 +313,88 @@ export class PlayerBox {
       return;
     }
 
-    if (depth === 0) {
-      // Happy — round eyes
+    // Celebration override — party face!
+    if (isCelebrating) {
+      // Sparkle star eyes
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.95)';
+      ctx.font = `bold ${eyeSize * 3}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', cx - eyeSpacing, eyeY);
+      ctx.fillText('★', cx + eyeSpacing, eyeY);
+      // Big happy mouth
+      const mouthY = cy + s * 0.3;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.lineWidth = Math.max(1.5, s * 0.08);
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(cx - eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.arc(cx, mouthY - s * 0.1, s * 0.45, 0.05 * Math.PI, 0.95 * Math.PI);
+      ctx.stroke();
+      // Blush marks
+      ctx.fillStyle = 'rgba(255, 105, 180, 0.5)';
+      ctx.beginPath();
+      ctx.ellipse(cx - eyeSpacing * 1.5, eyeY + eyeSize * 2.5, eyeSize * 0.9, eyeSize * 0.5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(cx + eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.ellipse(cx + eyeSpacing * 1.5, eyeY + eyeSize * 2.5, eyeSize * 0.9, eyeSize * 0.5, 0, 0, Math.PI * 2);
       ctx.fill();
-    } else if (depth === 1) {
-      // Worried — wider eyes, raised eyebrows
+      ctx.restore();
+      return;
+    }
+
+    // === BLINKING: draw closed eyes ===
+    if (isBlinking && effectiveDepth < 4) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = Math.max(1.5, s * 0.08);
+      ctx.lineCap = 'round';
+      // Simple horizontal lines for closed eyes
+      const blinkW = eyeSize * (isSleepy ? 0.6 : 1.0);
+      ctx.beginPath();
+      ctx.moveTo(cx - eyeSpacing - blinkW, eyeY);
+      ctx.lineTo(cx - eyeSpacing + blinkW, eyeY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + eyeSpacing - blinkW, eyeY);
+      ctx.lineTo(cx + eyeSpacing + blinkW, eyeY);
+      ctx.stroke();
+    } else if (isSleepy && effectiveDepth < 3) {
+      // Sleepy half-closed eyes — draw upper half arc only
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing, eyeY, eyeSize, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing, eyeY, eyeSize, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.fill();
+    } else if (effectiveDepth === 0) {
+      if (depth === 0 && this.splitDepth === 0) {
+        // Starting box: sparkle star eyes ★
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.font = `bold ${eyeSize * 2.8}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', cx - eyeSpacing, eyeY);
+        ctx.fillText('★', cx + eyeSpacing, eyeY);
+      } else {
+        // Happy — round eyes
+        ctx.beginPath();
+        ctx.arc(cx - eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Blush marks on happy face
+      ctx.fillStyle = 'rgba(255, 105, 180, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(cx - eyeSpacing * 1.5, eyeY + eyeSize * 2.2, eyeSize * 0.8, eyeSize * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + eyeSpacing * 1.5, eyeY + eyeSize * 2.2, eyeSize * 0.8, eyeSize * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (effectiveDepth === 1) {
+      // Worried — wider eyes, raised eyebrows, sweat drop
       ctx.beginPath();
       ctx.arc(cx - eyeSpacing, eyeY, eyeSize * 1.3, 0, Math.PI * 2);
       ctx.fill();
@@ -324,14 +412,46 @@ export class PlayerBox {
       ctx.moveTo(cx + eyeSpacing + eyeSize, eyeY - eyeSize * 2.2);
       ctx.lineTo(cx + eyeSpacing - eyeSize, eyeY - eyeSize * 1.6);
       ctx.stroke();
-    } else if (depth === 2) {
+
+      // Sweat drop
+      const sweatX = cx + eyeSpacing + eyeSize * 2;
+      const sweatY = eyeY - eyeSize * 1.5;
+      const sweatBob = Math.sin(now / 300) * 2;
+      ctx.fillStyle = 'rgba(100, 180, 255, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(sweatX, sweatY + sweatBob);
+      ctx.quadraticCurveTo(sweatX + eyeSize * 0.7, sweatY + eyeSize * 1.2 + sweatBob,
+        sweatX, sweatY + eyeSize * 1.8 + sweatBob);
+      ctx.quadraticCurveTo(sweatX - eyeSize * 0.7, sweatY + eyeSize * 1.2 + sweatBob,
+        sweatX, sweatY + sweatBob);
+      ctx.fill();
+    } else if (effectiveDepth === 2) {
+      // Scared — tall oval eyes with watery reflections
       ctx.beginPath();
       ctx.ellipse(cx - eyeSpacing, eyeY, eyeSize * 1.1, eyeSize * 1.6, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
       ctx.ellipse(cx + eyeSpacing, eyeY, eyeSize * 1.1, eyeSize * 1.6, 0, 0, Math.PI * 2);
       ctx.fill();
-    } else if (depth === 3) {
+
+      // Watery eye reflections (shiny dots)
+      ctx.fillStyle = 'rgba(200, 230, 255, 0.8)';
+      const reflectSize = eyeSize * 0.35;
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing - eyeSize * 0.3, eyeY - eyeSize * 0.6, reflectSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing - eyeSize * 0.3, eyeY - eyeSize * 0.6, reflectSize, 0, Math.PI * 2);
+      ctx.fill();
+      // Smaller secondary reflection
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing + eyeSize * 0.3, eyeY + eyeSize * 0.3, reflectSize * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing + eyeSize * 0.3, eyeY + eyeSize * 0.3, reflectSize * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (effectiveDepth === 3) {
+      // Terrified — darting pupils
       const dart = Math.sin(now / 80) * eyeSize * 0.3;
       ctx.beginPath();
       ctx.ellipse(cx - eyeSpacing, eyeY, eyeSize * 1.3, eyeSize * 1.8, 0, 0, Math.PI * 2);
@@ -347,23 +467,25 @@ export class PlayerBox {
       ctx.arc(cx + eyeSpacing + dart, eyeY, eyeSize * 0.5, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      const shake = Math.sin(now / 30) * 2;
+      // Max depth — spiral eyes (@@) instead of X eyes
+      const spiralTime = now / 200;
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.lineWidth = Math.max(2, s * 0.1);
+      ctx.lineWidth = Math.max(1.5, s * 0.06);
       ctx.lineCap = 'round';
-      const xSize = eyeSize * 1.1;
-      ctx.beginPath();
-      ctx.moveTo(cx - eyeSpacing - xSize + shake, eyeY - xSize);
-      ctx.lineTo(cx - eyeSpacing + xSize + shake, eyeY + xSize);
-      ctx.moveTo(cx - eyeSpacing + xSize + shake, eyeY - xSize);
-      ctx.lineTo(cx - eyeSpacing - xSize + shake, eyeY + xSize);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx + eyeSpacing - xSize - shake, eyeY - xSize);
-      ctx.lineTo(cx + eyeSpacing + xSize - shake, eyeY + xSize);
-      ctx.moveTo(cx + eyeSpacing + xSize - shake, eyeY - xSize);
-      ctx.lineTo(cx + eyeSpacing - xSize - shake, eyeY + xSize);
-      ctx.stroke();
+
+      // Draw spiral for each eye
+      for (const ex of [cx - eyeSpacing, cx + eyeSpacing]) {
+        ctx.beginPath();
+        const spiralSize = eyeSize * 1.2;
+        for (let a = 0; a < Math.PI * 4; a += 0.2) {
+          const r = (a / (Math.PI * 4)) * spiralSize;
+          const px = ex + Math.cos(a + spiralTime) * r;
+          const py = eyeY + Math.sin(a + spiralTime) * r;
+          if (a === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
     }
 
     // Mouth
@@ -373,20 +495,29 @@ export class PlayerBox {
     ctx.lineWidth = Math.max(1.5, s * 0.07);
     ctx.lineCap = 'round';
 
-    if (depth === 0) {
+    if (hasCatMouth && effectiveDepth < 3) {
+      // Cat mouth (ω) — draw a w-shape
+      ctx.beginPath();
+      const mw = mouthWidth * 0.7;
+      const my = mouthY - s * 0.05;
+      ctx.moveTo(cx - mw, my);
+      ctx.quadraticCurveTo(cx - mw * 0.5, my + mw * 0.7, cx, my);
+      ctx.quadraticCurveTo(cx + mw * 0.5, my + mw * 0.7, cx + mw, my);
+      ctx.stroke();
+    } else if (effectiveDepth === 0) {
       ctx.beginPath();
       ctx.arc(cx, mouthY - s * 0.1, mouthWidth, 0.1 * Math.PI, 0.9 * Math.PI);
       ctx.stroke();
-    } else if (depth === 1) {
+    } else if (effectiveDepth === 1) {
       ctx.beginPath();
       ctx.arc(cx, mouthY + s * 0.2, mouthWidth * 0.6, 1.2 * Math.PI, 1.8 * Math.PI);
       ctx.stroke();
-    } else if (depth === 2) {
+    } else if (effectiveDepth === 2) {
       const wobble = Math.sin(now / 200) * s * 0.02;
       ctx.beginPath();
       ctx.arc(cx, mouthY + s * 0.3 + wobble, mouthWidth * 0.7, 1.15 * Math.PI, 1.85 * Math.PI);
       ctx.stroke();
-    } else if (depth === 3) {
+    } else if (effectiveDepth === 3) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       ctx.beginPath();
       ctx.ellipse(cx, mouthY, mouthWidth * 0.25, mouthWidth * 0.35, 0, 0, Math.PI * 2);
