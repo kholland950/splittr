@@ -1,0 +1,91 @@
+src/constants.js
+  9cadc1aa02f5e988 1-71
+tests/test-collision.js
+  9cadc1aa02f5e988 1-2
+tests/test-player.js
+  9cadc1aa02f5e988 1-2
+tests/test-runner.js
+  9cadc1aa02f5e988 1-84
+tests/test-constants.js
+  9cadc1aa02f5e988 1-16
+tests/test-input.js
+  9cadc1aa02f5e988 1-2
+test.html
+  9cadc1aa02f5e988 1-27
+tests/test-triangle.js
+  9cadc1aa02f5e988 1-2
+tests/test-difficulty.js
+  9cadc1aa02f5e988 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "e1ab8586b64637a195092dcd14c610b36b4f88ce",
+  "prompts": {
+    "0463d7db1b0cafa2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7c1e5c45-0d17-4c41-a942-1708ef109b0d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 538,
+      "total_deletions": 17,
+      "accepted_lines": 521,
+      "overriden_lines": 0
+    },
+    "3b61a2c3e312ee6e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f6adc749-9dfc-4bf3-8c71-2da202d10fab",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 1697,
+      "total_deletions": 25,
+      "accepted_lines": 1672,
+      "overriden_lines": 0
+    },
+    "43f6a6074b08f2dd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e27ed7d6-3e96-411e-a96f-81d7f4d2c548",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 32,
+      "total_deletions": 22,
+      "accepted_lines": 29,
+      "overriden_lines": 0
+    },
+    "9cadc1aa02f5e988": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4e2e52f3-c357-42ef-b7ac-943c763204fa",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 208,
+      "total_deletions": 0,
+      "accepted_lines": 208,
+      "overriden_lines": 0
+    },
+    "aa2863b2dc31b1a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "039b2d40-1a97-4c90-8aba-b5515ad1324f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "qwoodmansee <github@qwoodmansee.xyz>",
+      "messages": [],
+      "total_additions": 228,
+      "total_deletions": 11,
+      "accepted_lines": 217,
+      "overriden_lines": 0
+    }
+  }
+}
