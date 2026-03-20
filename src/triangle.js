@@ -315,18 +315,30 @@ export function spawnTriangle(canvasWidth, recentColumns, boxes = null) {
   let col;
   let attempts = 0;
 
-  // Smart targeting: 40% chance to aim at a box when boxes are small (split)
-  const shouldTarget = boxes && boxes.length > 1 && Math.random() < 0.4;
+  // Anti-cheese: detect if all boxes are camping in edges (within 15% of screen width)
+  const edgeZone = canvasWidth * 0.15;
+  let allInCorner = false;
+  if (boxes && boxes.length > 0) {
+    allInCorner = boxes.every(b => {
+      const cx = b.x + b.width / 2;
+      return cx < edgeZone || cx > canvasWidth - edgeZone;
+    });
+  }
+
+  // Smart targeting: 40% normally, 85% if camping in corners
+  const targetChance = allInCorner ? 0.85 : 0.4;
+  const shouldTarget = boxes && boxes.length >= 1 && Math.random() < targetChance;
+
   if (shouldTarget) {
     // Pick a random box and aim at it
     const targetBox = boxes[Math.floor(Math.random() * boxes.length)];
     const targetX = targetBox.x + targetBox.width / 2;
-    // Add some spread (within 2 columns of the target)
     const targetCol = Math.floor(targetX / TRIANGLE_WIDTH);
-    const spread = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+    // Tighter spread when anti-cheesing (0 spread = dead-on)
+    const maxSpread = allInCorner ? 1 : 2;
+    const spread = Math.floor(Math.random() * (maxSpread * 2 + 1)) - maxSpread;
     col = Math.max(0, Math.min(columnCount - 1, targetCol + spread));
     if (recentColumns.includes(col)) {
-      // Fall back to random
       col = null;
     }
   }

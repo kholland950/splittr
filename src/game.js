@@ -121,8 +121,13 @@ class Game {
           cycleSkin();
           this.input.clear();
           this._stateJustChanged = true;
-        } else if ((this.input.anyKeyPressed() || this.touch.consumeTap()) && !this._stateJustChanged) {
-          this._startGame();
+        } else {
+          const tapped = !this._stateJustChanged && this.touch.consumeTap();
+          const keyPressed = this.input.anyKeyPressed();
+          if ((keyPressed || tapped) && !this._stateJustChanged) {
+            this.touch.clear();
+            this._startGame();
+          }
         }
         this._stateJustChanged = false;
         break;
@@ -139,12 +144,18 @@ class Game {
           this.renderer.ctx, this.renderer.width, this.renderer.height,
           this.finalScore, now, this._deathRank
         );
-        if ((this.input.anyKeyPressed() || this.touch.consumeTap()) && !this._stateJustChanged) {
-          this.input.clear();
-          this.state = State.READY;
-          this._stateJustChanged = true;
-          this.ui.resetReadyScreen();
-          announce('Splittr. Press any key to start.');
+        {
+          // Only consume tap when we can actually act on it
+          const tapped = !this._stateJustChanged && this.touch.consumeTap();
+          const keyPressed = this.input.anyKeyPressed();
+          if ((keyPressed || tapped) && !this._stateJustChanged) {
+            this.input.clear();
+            this.touch.clear();
+            this.state = State.READY;
+            this._stateJustChanged = true;
+            this.ui.resetReadyScreen();
+            announce('Splittr. Press any key to start.');
+          }
         }
         this._stateJustChanged = false;
         break;
@@ -181,11 +192,15 @@ class Game {
           this.state = State.READY;
           this._stateJustChanged = true;
           this.ui.resetReadyScreen();
-        } else if ((this.input.anyKeyPressed() || this.touch.consumeTap()) && !this._stateJustChanged) {
-          this.input.clear();
-          this.state = State.READY;
-          this._stateJustChanged = true;
-          this.ui.resetReadyScreen();
+        } else {
+          const tapped = !this._stateJustChanged && this.touch.consumeTap();
+          if ((this.input.anyKeyPressed() || tapped) && !this._stateJustChanged) {
+            this.input.clear();
+            this.touch.clear();
+            this.state = State.READY;
+            this._stateJustChanged = true;
+            this.ui.resetReadyScreen();
+          }
         }
         this._stateJustChanged = false;
         break;
@@ -276,27 +291,51 @@ class Game {
     for (let i = 0; i < this.boxes.length; i++) {
       const box = this.boxes[i];
       box.update(dt, this.input, this.renderer.width, this.touch.isMobile && i === this.touch.activeBoxIndex ? this.touch : null);
+
+      // Anti-corner-cheese: edge wind pushes boxes toward center
+      // Stronger the longer you camp and the further into the game
+      if (!box.merging) {
+        const cx = box.x + box.width / 2;
+        const edgeZone = this.renderer.width * 0.12;
+        const windStrength = 200 + this.elapsedTime * 8; // gets stronger over time
+        if (cx < edgeZone) {
+          const factor = 1 - (cx / edgeZone); // 1.0 at wall, 0.0 at edge zone boundary
+          box.velocity += windStrength * factor * dt;
+        } else if (cx > this.renderer.width - edgeZone) {
+          const factor = 1 - ((this.renderer.width - cx) / edgeZone);
+          box.velocity -= windStrength * factor * dt;
+        }
+      }
     }
 
-    // Box-to-box collisions (skip merging boxes)
-    for (let i = 0; i < this.boxes.length; i++) {
-      for (let j = i + 1; j < this.boxes.length; j++) {
-        if (this.boxes[i].merging || this.boxes[j].merging) continue;
-        const a = this.boxes[i].getBounds();
-        const b = this.boxes[j].getBounds();
-        const overlap = boxOverlap(a, b);
-        if (overlap) {
-          const pushEach = overlap.overlap / 2 + 1;
-          if (overlap.aIsLeft) {
-            this.boxes[i].x -= pushEach;
-            this.boxes[j].x += pushEach;
-          } else {
-            this.boxes[i].x += pushEach;
-            this.boxes[j].x -= pushEach;
+    // Box-to-box collisions — multiple passes to prevent tunneling
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = 0; i < this.boxes.length; i++) {
+        for (let j = i + 1; j < this.boxes.length; j++) {
+          if (this.boxes[i].merging || this.boxes[j].merging) continue;
+          const a = this.boxes[i].getBounds();
+          const b = this.boxes[j].getBounds();
+          const overlap = boxOverlap(a, b);
+          if (overlap) {
+            // Full separation + 2px gap to prevent sticking
+            const pushEach = overlap.overlap / 2 + 2;
+            if (overlap.aIsLeft) {
+              this.boxes[i].x -= pushEach;
+              this.boxes[j].x += pushEach;
+            } else {
+              this.boxes[i].x += pushEach;
+              this.boxes[j].x -= pushEach;
+            }
+            // Only swap velocities on first pass to avoid energy explosion
+            if (pass === 0) {
+              const tempVel = this.boxes[i].velocity;
+              this.boxes[i].velocity = this.boxes[j].velocity * BOX_COLLISION_DAMPING;
+              this.boxes[j].velocity = tempVel * BOX_COLLISION_DAMPING;
+            }
+            // Clamp to screen bounds after push
+            this.boxes[i].x = Math.max(0, Math.min(this.boxes[i].x, this.renderer.width - this.boxes[i].width));
+            this.boxes[j].x = Math.max(0, Math.min(this.boxes[j].x, this.renderer.width - this.boxes[j].width));
           }
-          const tempVel = this.boxes[i].velocity;
-          this.boxes[i].velocity = this.boxes[j].velocity * BOX_COLLISION_DAMPING;
-          this.boxes[j].velocity = tempVel * BOX_COLLISION_DAMPING;
         }
       }
     }
