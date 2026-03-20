@@ -1,15 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
-    <script src="src/game.js"></script>
-    <link rel="stylesheet" type="text/css" href="css/main.css">
-    <title>splittr</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Splittr - An arcade game where you dodge falling triangles that split your box. Use keyboard pairs to control each piece. How long can you survive?">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Splittr - Dodge, Split, Survive</title>
+  <link rel="stylesheet" href="css/main.css">
 </head>
-<body onload="init()">
-    <canvas id="game-canvas">
-        alternate content
+<body>
+  <a href="#game-canvas" class="sr-only sr-only-focusable">Skip to game</a>
+
+  <main role="main">
+    <h1 class="sr-only">Splittr - Arcade Survival Game</h1>
+
+    <div class="sr-only" id="game-description">
+      Splittr is a keyboard-controlled arcade game. Triangles fall from the top of the screen toward your box at the bottom.
+      When a triangle hits your box, it splits into two smaller boxes, each controlled by a different key pair.
+      Dodge the triangles by moving left and right. The game ends when all your boxes are destroyed.
+      Press any key to start. During gameplay, each box shows its control keys (e.g., D/F to move left/right).
+      Press A on the title screen to view achievements. Press Tab to view the leaderboard.
+    </div>
+
+    <canvas id="game-canvas"
+      role="img"
+      aria-label="Splittr game canvas - dodge falling triangles to survive"
+      aria-describedby="game-description"
+      tabindex="0">
+      Your browser does not support the canvas element. Splittr requires an HTML5 canvas to run.
     </canvas>
+
+    <!-- Live region for screen reader announcements of game state changes -->
+    <div id="game-announcements" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
+    <!-- Polite announcements for score updates -->
+    <div id="game-score-announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <script>
+    window.addEventListener('error', function(e) {
+      var pre = document.createElement('pre');
+      pre.style.cssText = 'color:red;padding:20px;position:fixed;top:0;left:0;z-index:9999;background:#000';
+      pre.textContent = e.message + '\n' + (e.filename || '') + ':' + (e.lineno || '') + '\n' + (e.error && e.error.stack || '');
+      document.body.appendChild(pre);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      var pre = document.createElement('pre');
+      pre.style.cssText = 'color:red;padding:20px;position:fixed;top:0;left:0;z-index:9999;background:#000';
+      pre.textContent = 'Unhandled rejection: ' + (e.reason && e.reason.stack || e.reason || 'unknown');
+      document.body.appendChild(pre);
+    });
+  </script>
+  <script type="module" src="src/game.js"></script>
 </body>
 </html>
