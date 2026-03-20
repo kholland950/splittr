@@ -16,6 +16,8 @@ var defaultPlayerHeight = 120;
 var defaultPlayerWidth = 40;
 var defaultPlayerMass = 4;
 
+var maxSplitDepth = 3; // max times a box can split (0 = initial, 3 = up to 8 boxes)
+
 var splitters;
 
 var FPS = 60;
@@ -93,7 +95,7 @@ function init() {
     });
 
     splitters = [];
-    addPlayerBox(defaultPlayerMass, stage.width / 2 - defaultPlayerHeight / 2);
+    addPlayerBox(defaultPlayerMass, stage.width / 2 - defaultPlayerHeight / 2, 0, 0);
 
     pointText = new createjs.Text(points, "32px avenir next", "#2B345B");
     pointText.x = 20;
@@ -136,9 +138,14 @@ function handleTick(event) {
             // Apply friction and move
             box.acceleration -= playerDecel * getSign(box.velocity);
             movePlayerBox(box, box.acceleration, event.delta/1000);
+        }
 
-            // Update the label position to follow the box
-            updateBoxLabel(box);
+        // Resolve box-to-box collisions
+        resolveBoxCollisions();
+
+        // Update labels after all positions are final
+        for (var i = 0; i < playerBoxes.length; i++) {
+            updateBoxLabel(playerBoxes[i]);
         }
 
         points += 1;
@@ -181,8 +188,9 @@ function moveObjectVertical(object, acceleration, time) {
     object.velocity += acceleration * time;
 }
 
-function addPlayerBox(mass, xPos, velocity) {
+function addPlayerBox(mass, xPos, velocity, depth, inheritedKeyPair) {
     velocity = velocity || 0;
+    depth = depth || 0;
 
     var playerSquare = new createjs.Shape();
     var width = defaultPlayerWidth * mass;
@@ -196,9 +204,10 @@ function addPlayerBox(mass, xPos, velocity) {
     playerSquare.rightBound = (stage.width - xPos) - width/2;
     playerSquare.velocity = velocity;
     playerSquare.mass = mass;
+    playerSquare.splitDepth = depth;
 
-    // Assign key pair
-    var keyPair = getNextKeyPair();
+    // Inherit parent's keys or assign new ones
+    var keyPair = inheritedKeyPair || getNextKeyPair();
     playerSquare.keyPair = keyPair;
 
     // Create label showing the keys
@@ -221,6 +230,59 @@ function addPlayerBox(mass, xPos, velocity) {
     updateBoxLabel(playerSquare);
 
     return playerSquare;
+}
+
+// Get the world-space bounding box of a player box
+function getBoxBounds(box) {
+    var left = box.x + box.graphics.command.x;
+    var top = box.graphics.command.y;
+    var w = box.graphics.command.w;
+    var h = box.graphics.command.h;
+    return {left: left, right: left + w, top: top, bottom: top + h, width: w, height: h};
+}
+
+// Get the world-space bounding box of a splitter triangle
+function getSplitterBounds(splitter) {
+    return {
+        left: splitter.x - enemyWidth / 2,
+        right: splitter.x + enemyWidth / 2,
+        top: splitter.y - enemyHeight,
+        bottom: splitter.y
+    };
+}
+
+function resolveBoxCollisions() {
+    for (var i = 0; i < playerBoxes.length; i++) {
+        for (var j = i + 1; j < playerBoxes.length; j++) {
+            var a = getBoxBounds(playerBoxes[i]);
+            var b = getBoxBounds(playerBoxes[j]);
+
+            // Check AABB overlap
+            if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
+                var overlapLeft = a.right - b.left;
+                var overlapRight = b.right - a.left;
+                var overlap = Math.min(overlapLeft, overlapRight);
+                var pushEach = overlap / 2 + 1;
+
+                var aCenterX = (a.left + a.right) / 2;
+                var bCenterX = (b.left + b.right) / 2;
+
+                if (aCenterX < bCenterX) {
+                    // a is left, b is right — push apart
+                    playerBoxes[i].x -= pushEach;
+                    playerBoxes[j].x += pushEach;
+                } else {
+                    playerBoxes[i].x += pushEach;
+                    playerBoxes[j].x -= pushEach;
+                }
+
+                // Exchange some velocity (elastic-ish collision)
+                var tempVel = playerBoxes[i].velocity;
+                playerBoxes[i].velocity = playerBoxes[j].velocity * 0.8;
+                playerBoxes[j].velocity = tempVel * 0.8;
+            }
+        }
+    }
 }
 
 function willBeInBounds(object, nextPos) {
@@ -283,17 +345,42 @@ function moveSplitters(event) {
 
 function splitterHitPlayerBox(splitter) {
     var now = createjs.Ticker.getTime();
+    var sBounds = getSplitterBounds(splitter);
+    var pushForce = 600;
+
     for (var i = 0; i < playerBoxes.length; i++) {
-        // Skip immune boxes
-        if (playerBoxes[i].immuneUntil && now < playerBoxes[i].immuneUntil) {
-            // Flash effect while immune
-            playerBoxes[i].alpha = (Math.floor(now / 60) % 2 === 0) ? 0.3 : 1.0;
+        var box = playerBoxes[i];
+
+        // Handle immunity flashing
+        if (box.immuneUntil && now < box.immuneUntil) {
+            box.alpha = (Math.floor(now / 60) % 2 === 0) ? 0.3 : 1.0;
             continue;
         }
-        playerBoxes[i].alpha = 1.0;
-        var pt = splitter.localToLocal(0, 0, playerBoxes[i]);
-        if (playerBoxes[i].hitTest(pt.x, pt.y)) {
-            return i;
+        box.alpha = 1.0;
+
+        var bBounds = getBoxBounds(box);
+
+        // Check AABB overlap between triangle bounding box and player box
+        if (sBounds.left < bBounds.right && sBounds.right > bBounds.left &&
+            sBounds.top < bBounds.bottom && sBounds.bottom > bBounds.top) {
+
+            // Check if the tip (bottom center of triangle) is inside the box
+            var tipX = splitter.x;
+            var tipY = splitter.y;
+            if (tipX >= bBounds.left && tipX <= bBounds.right &&
+                tipY >= bBounds.top && tipY <= bBounds.bottom) {
+                // Direct hit — split
+                return i;
+            }
+
+            // Edge contact — push the box sideways
+            var splitterCenterX = splitter.x;
+            var boxCenterX = (bBounds.left + bBounds.right) / 2;
+            if (splitterCenterX < boxCenterX) {
+                box.velocity += pushForce * (1/FPS);
+            } else {
+                box.velocity -= pushForce * (1/FPS);
+            }
         }
     }
     return -1;
@@ -307,16 +394,14 @@ function splitPlayerBox(index) {
         stage.removeChild(oldBox.label);
     }
 
-    var minMass = 0.5; // Minimum mass before box is destroyed
-
-    if (oldBox.mass > minMass) {
-        // Always split! No limit on number of boxes
+    if (oldBox.splitDepth < maxSplitDepth) {
         var pt = oldBox.localToGlobal(stage.width/2, 0);
         var newMass = oldBox.mass / 2;
         var splitOffset = Math.max(enemyWidth / 3, defaultPlayerWidth * newMass);
 
-        addPlayerBox(newMass, pt.x - splitOffset, -300);
-        addPlayerBox(newMass, pt.x + splitOffset, 300);
+        // Left child inherits parent's keys, right child gets new keys
+        addPlayerBox(newMass, pt.x - splitOffset, -300, oldBox.splitDepth + 1, oldBox.keyPair);
+        addPlayerBox(newMass, pt.x + splitOffset, 300, oldBox.splitDepth + 1);
     }
     // Remove old box from array
     playerBoxes.splice(index, 1);
