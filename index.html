@@ -8,6 +8,20 @@
 </head>
 <body>
   <canvas id="game-canvas"></canvas>
+  <script>
+    window.addEventListener('error', function(e) {
+      var pre = document.createElement('pre');
+      pre.style.cssText = 'color:red;padding:20px;position:fixed;top:0;left:0;z-index:9999;background:#000';
+      pre.textContent = e.message + '\n' + (e.filename || '') + ':' + (e.lineno || '') + '\n' + (e.error && e.error.stack || '');
+      document.body.appendChild(pre);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      var pre = document.createElement('pre');
+      pre.style.cssText = 'color:red;padding:20px;position:fixed;top:0;left:0;z-index:9999;background:#000';
+      pre.textContent = 'Unhandled rejection: ' + (e.reason && e.reason.stack || e.reason || 'unknown');
+      document.body.appendChild(pre);
+    });
+  </script>
   <script type="module" src="src/game.js"></script>
 </body>
 </html>

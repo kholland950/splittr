@@ -5,6 +5,7 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { PlayerBox } from './player.js';
 import { Triangle, spawnTriangle } from './triangle.js';
+import { ParticleSystem } from './particles.js';
 import { aabbOverlap, tipHitsBox, edgeContact, boxOverlap } from './collision.js';
 import {
   PLAYER_WIDTH, PLAYER_HEIGHT, MAX_SPLIT_DEPTH,
@@ -19,13 +20,14 @@ class Game {
     this.input = new InputManager();
     this.difficulty = new DifficultyManager();
     this.ui = new UI();
+    this.particles = new ParticleSystem();
 
     this.state = State.READY;
     this.boxes = [];
     this.triangles = [];
     this.elapsedTime = 0;
     this.finalScore = 0;
-    this.recentColumns = []; // columns spawned in last COLUMN_COOLDOWN
+    this.recentColumns = [];
     this.recentColumnTimestamps = [];
 
     this._lastFrameTime = 0;
@@ -39,11 +41,11 @@ class Game {
   }
 
   _loop(timestamp) {
-    const dt = Math.min((timestamp - this._lastFrameTime) / 1000, 0.05); // cap at 50ms
+    const dt = Math.min((timestamp - this._lastFrameTime) / 1000, 0.05);
     this._lastFrameTime = timestamp;
     const now = performance.now();
 
-    this.renderer.beginFrame(now);
+    this.renderer.beginFrame(now, dt);
 
     switch (this.state) {
       case State.READY:
@@ -58,11 +60,12 @@ class Game {
 
       case State.PLAYING:
         this._updatePlaying(dt, now);
-        this._renderPlaying(now);
+        this._renderPlaying(now, dt);
         break;
 
       case State.DEAD:
-        this._renderPlaying(now);
+        this.particles.update(dt);
+        this._renderPlaying(now, dt);
         this.ui.renderDeathScreen(
           this.renderer.ctx, this.renderer.width, this.renderer.height,
           this.finalScore, now
@@ -71,6 +74,7 @@ class Game {
           this.input.clear();
           this.state = State.READY;
           this._stateJustChanged = true;
+          this.ui.resetReadyScreen();
         }
         this._stateJustChanged = false;
         break;
@@ -86,9 +90,11 @@ class Game {
     this.difficulty.reset();
     this.boxes = [];
     this.triangles = [];
+    this.particles.clear();
     this.elapsedTime = 0;
     this.recentColumns = [];
     this.recentColumnTimestamps = [];
+    this.ui.resetDeathScreen();
 
     const startX = this.renderer.width / 2 - PLAYER_WIDTH / 2;
     const startY = this.renderer.height - PLAYER_HEIGHT - 20;
@@ -148,6 +154,11 @@ class Game {
       const tri = this.triangles[t];
       tri.update(dt);
 
+      // Trail particles for triangles
+      if (tri.y > 0) {
+        this.particles.emitTriangleTrail(tri.x, tri.y - 45);
+      }
+
       if (tri.isOffScreen(this.renderer.height)) {
         trianglesToRemove.add(t);
         continue;
@@ -165,22 +176,23 @@ class Game {
         if (!aabbOverlap(triBounds, boxBounds)) continue;
 
         if (tipHitsBox(tip, boxBounds)) {
-          // Direct hit
           if (box.splitDepth >= MAX_SPLIT_DEPTH) {
-            // Destroy the box
+            // Destroy — big red particle burst
+            this.particles.emitDestroy(box.x, box.y, box.width, box.height);
             boxesToRemove.push(b);
+            this.renderer.triggerShake(now, 1.5);
           } else {
-            // Split the box
+            // Split — cyan particle burst
+            this.particles.emitSplit(box.x, box.y, box.width, box.height);
             const newPair = this.input.allocateKeyPair();
             const children = box.split(newPair, now);
             boxesToRemove.push(b);
             boxesToAdd.push(...children);
-            this.renderer.triggerShake(now);
+            this.renderer.triggerShake(now, 1);
           }
           trianglesToRemove.add(t);
-          break; // triangle consumed
+          break;
         } else {
-          // Edge push — triangle NOT consumed
           const triCenterX = tri.x;
           const boxCenterX = (boxBounds.left + boxBounds.right) / 2;
           const side = edgeContact(triCenterX, boxCenterX);
@@ -190,7 +202,7 @@ class Game {
       }
     }
 
-    // Apply removals/additions (reverse order for indices)
+    // Apply removals/additions
     boxesToRemove.sort((a, b) => b - a);
     for (const i of boxesToRemove) {
       this.boxes.splice(i, 1);
@@ -202,6 +214,9 @@ class Game {
       this.triangles.splice(i, 1);
     }
 
+    // Update particles
+    this.particles.update(dt);
+
     // Check death
     if (this.boxes.length === 0) {
       this.finalScore = this.elapsedTime;
@@ -211,7 +226,7 @@ class Game {
     }
   }
 
-  _renderPlaying(now) {
+  _renderPlaying(now, dt) {
     const ctx = this.renderer.ctx;
 
     for (const box of this.boxes) {
@@ -220,6 +235,9 @@ class Game {
     for (const tri of this.triangles) {
       tri.render(ctx);
     }
+
+    // Particles on top of game objects
+    this.particles.render(ctx);
 
     this.ui.renderScore(ctx, this.elapsedTime, this.renderer.width);
   }

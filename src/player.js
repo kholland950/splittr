@@ -86,28 +86,82 @@ export class PlayerBox {
   }
 
   render(ctx, now) {
+    const immune = this.isImmune(now);
+
     // Flashing during immunity
-    if (this.isImmune(now)) {
+    if (immune) {
       ctx.globalAlpha = Math.floor(now / 60) % 2 === 0 ? 0.3 : 1.0;
     }
 
-    // Box color lightens with split depth
-    const lightness = Math.min(50 + this.splitDepth * 10, 90);
-    ctx.fillStyle = `hsl(190, 100%, ${lightness}%)`;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    // Glow effect
+    const glowHue = 190;
+    const glowLightness = 50 + this.splitDepth * 8;
+    ctx.shadowColor = `hsl(${glowHue}, 100%, ${glowLightness}%)`;
+    ctx.shadowBlur = immune ? 20 + Math.sin(now / 50) * 10 : 12;
 
+    // Gradient fill that lightens with split depth
+    const lightBase = Math.min(40 + this.splitDepth * 10, 75);
+    const lightTop = Math.min(55 + this.splitDepth * 10, 90);
+    const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+    grad.addColorStop(0, `hsl(${glowHue}, 100%, ${lightTop}%)`);
+    grad.addColorStop(1, `hsl(${glowHue}, 100%, ${lightBase}%)`);
+    ctx.fillStyle = grad;
+
+    // Rounded rectangle
+    const r = Math.min(6, this.width / 8);
+    this._roundRect(ctx, this.x, this.y, this.width, this.height, r);
+    ctx.fill();
+
+    // Inner highlight (top edge shine)
+    const shine = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height * 0.4);
+    shine.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+    shine.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = shine;
+    this._roundRect(ctx, this.x, this.y, this.width, this.height, r);
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = `hsla(${glowHue}, 100%, ${lightTop + 10}%, 0.6)`;
+    ctx.lineWidth = 1.5;
+    this._roundRect(ctx, this.x, this.y, this.width, this.height, r);
+    ctx.stroke();
+
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1.0;
 
     // Key labels on the box face
     const fontSize = Math.max(10, Math.min(24, this.width / 3));
     ctx.font = `bold ${fontSize}px monospace`;
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     const centerY = this.y + this.height / 2;
     const quarter = this.width / 4;
+
+    // Text shadow for readability
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillText(this.keyPair.leftLabel, this.x + quarter + 1, centerY + 1);
+    ctx.fillText(this.keyPair.rightLabel, this.x + this.width - quarter + 1, centerY + 1);
+
+    // Actual text
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.fillText(this.keyPair.leftLabel, this.x + quarter, centerY);
     ctx.fillText(this.keyPair.rightLabel, this.x + this.width - quarter, centerY);
+  }
+
+  _roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
   }
 }
