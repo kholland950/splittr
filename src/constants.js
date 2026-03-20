@@ -1,30 +1,55 @@
 // src/constants.js — All tunable game values in one place
 
 // Player
-export const PLAYER_WIDTH = 160;
-export const PLAYER_HEIGHT = 120;
-export const PLAYER_ACCEL = 3000;
-export const PLAYER_FRICTION = 400;
-export const PLAYER_WALL_BOUNCE = 0.4;
-export const MAX_SPLIT_DEPTH = 4;
-export const SPLIT_IMMUNITY_MS = 400;
-export const SPLIT_FLY_APART_MULTIPLIER = 1.5;
-export const SPLIT_INITIAL_VELOCITY = 300;
-export const BOX_COLLISION_DAMPING = 0.8;
+export const PLAYER_WIDTH = 120;
+export const PLAYER_HEIGHT = 90;
+export const PLAYER_ACCEL = 5000;
+export const PLAYER_FRICTION = 300;
+export const PLAYER_WALL_BOUNCE = 0.5;
+export const MAX_SPLIT_DEPTH = 4; // limited naturally by 5 home-row key pairs
+export const SPLIT_IMMUNITY_MS = 350;
+export const SPLIT_FLY_APART_MULTIPLIER = 1.8;
+export const SPLIT_INITIAL_VELOCITY = 450;
+export const BOX_COLLISION_DAMPING = 0.75;
+
+// Player trail
+export const TRAIL_SPEED_THRESHOLD = 200;
+export const TRAIL_MAX_LENGTH = 12;
 
 // Triangles
-export const TRIANGLE_WIDTH = 60;
-export const TRIANGLE_HEIGHT = 50;
-export const TRIANGLE_COLUMN_COOLDOWN_MS = 500;
+export const TRIANGLE_WIDTH = 55;
+export const TRIANGLE_HEIGHT = 48;
+export const TRIANGLE_COLUMN_COOLDOWN_MS = 350;
+
+// Triangle variety
+export const GOLDEN_TRIANGLE_CHANCE = 0.04; // 4% chance
+export const GOLDEN_SHIELD_DURATION_MS = 3000;
+export const BIG_TRIANGLE_CHANCE = 0.12;
+export const FAST_TRIANGLE_CHANCE = 0.15;
+export const WOBBLE_TRIANGLE_CHANCE = 0.1;
+export const HEART_TRIANGLE_CHANCE = 0.05; // 5% chance
+
+// Heart / Merge
+export const HEART_SHIELD_DURATION_MS = 2000;
+export const MERGE_SLIDE_SPEED = 600; // px/sec boxes slide toward each other
+export const COLOR_HEART = '#ff69b4';
 
 // Difficulty tiers: [maxTime, spawnIntervalMs, fallSpeed, maxSimultaneous]
 export const DIFFICULTY_TIERS = [
-  { maxTime: 10,       spawnInterval: 1500, fallSpeed: 200, maxTriangles: 3 },
-  { maxTime: 20,       spawnInterval: 1000, fallSpeed: 300, maxTriangles: 5 },
-  { maxTime: 40,       spawnInterval: 700,  fallSpeed: 400, maxTriangles: 8 },
-  { maxTime: 60,       spawnInterval: 500,  fallSpeed: 500, maxTriangles: 12 },
-  { maxTime: Infinity, spawnInterval: 300,  fallSpeed: 600, maxTriangles: 20 },
+  { maxTime: 5,        spawnInterval: 1200, fallSpeed: 300, maxTriangles: 3 },
+  { maxTime: 12,       spawnInterval: 800,  fallSpeed: 420, maxTriangles: 6 },
+  { maxTime: 25,       spawnInterval: 550,  fallSpeed: 550, maxTriangles: 10 },
+  { maxTime: 45,       spawnInterval: 380,  fallSpeed: 680, maxTriangles: 15 },
+  { maxTime: Infinity, spawnInterval: 250,  fallSpeed: 800, maxTriangles: 25 },
 ];
+
+// Combo system
+export const COMBO_WINDOW_MS = 2000; // time between splits to maintain combo
+export const COMBO_DISPLAY_DURATION_MS = 1500;
+
+// Slow-mo
+export const SLOWMO_DURATION_MS = 200;
+export const SLOWMO_FACTOR = 0.25;
 
 // Colors
 export const COLOR_BACKGROUND = '#0a0e27';
@@ -32,6 +57,7 @@ export const COLOR_GRID = 'rgba(255, 255, 255, 0.03)';
 export const COLOR_PLAYER = '#00d4ff';
 export const COLOR_PLAYER_LIGHT = '#66e5ff';
 export const COLOR_TRIANGLE = '#ff1744';
+export const COLOR_GOLDEN = '#ffd700';
 export const COLOR_TEXT = '#ffffff';
 export const COLOR_TEXT_DIM = 'rgba(255, 255, 255, 0.5)';
 
@@ -39,33 +65,33 @@ export const COLOR_TEXT_DIM = 'rgba(255, 255, 255, 0.5)';
 export const SHAKE_DURATION_MS = 67; // ~4 frames at 60fps
 export const SHAKE_MAGNITUDE = 4;
 
-// Key pair pool: [leftKey, rightKey] — labels used for display, codes for input
-export const KEY_PAIRS = [
-  { left: 'd', right: 'f', leftLabel: 'D', rightLabel: 'F' },
-  { left: 'j', right: 'k', leftLabel: 'J', rightLabel: 'K' },
-  { left: 'a', right: 's', leftLabel: 'A', rightLabel: 'S' },
-  { left: 'l', right: ';', leftLabel: 'L', rightLabel: ';' },
-  { left: 'q', right: 'w', leftLabel: 'Q', rightLabel: 'W' },
-  { left: 'o', right: 'p', leftLabel: 'O', rightLabel: 'P' },
-  { left: 'e', right: 'r', leftLabel: 'E', rightLabel: 'R' },
-  { left: 'u', right: 'i', leftLabel: 'U', rightLabel: 'I' },
-  { left: 't', right: 'y', leftLabel: 'T', rightLabel: 'Y' },
+// Background particles
+export const BG_PARTICLE_COUNT = 40;
+
+// Home row key pairs — spatially mapped left-to-right across the keyboard
+// Center pair is the starter, splits expand outward
+export const KEY_PAIRS_START = [
   { left: 'g', right: 'h', leftLabel: 'G', rightLabel: 'H' },
-  { left: 'z', right: 'x', leftLabel: 'Z', rightLabel: 'X' },
-  { left: 'b', right: 'n', leftLabel: 'B', rightLabel: 'N' },
-  { left: 'c', right: 'v', leftLabel: 'C', rightLabel: 'V' },
-  { left: 'm', right: ',', leftLabel: 'M', rightLabel: ',' },
-  { left: '1', right: '2', leftLabel: '1', rightLabel: '2' },
-  { left: '3', right: '4', leftLabel: '3', rightLabel: '4' },
-  { left: '5', right: '6', leftLabel: '5', rightLabel: '6' },
-  { left: '7', right: '8', leftLabel: '7', rightLabel: '8' },
-  { left: '9', right: '0', leftLabel: '9', rightLabel: '0' },
-  { left: '-', right: '=', leftLabel: '-', rightLabel: '=' },
-  { left: '[', right: ']', leftLabel: '[', rightLabel: ']' },
-  { left: '.', right: '/', leftLabel: '.', rightLabel: '/' },
-  { left: "'", right: '\\', leftLabel: "'", rightLabel: '\\' },
-  { left: '`', right: 'Backspace', leftLabel: '`', rightLabel: 'BS' },
 ];
+
+export const KEY_PAIRS_LEFT = [
+  { left: 'd', right: 'f', leftLabel: 'D', rightLabel: 'F' },
+  { left: 'a', right: 's', leftLabel: 'A', rightLabel: 'S' },
+];
+
+export const KEY_PAIRS_RIGHT = [
+  { left: 'j', right: 'k', leftLabel: 'J', rightLabel: 'K' },
+  { left: 'l', right: ';', leftLabel: 'L', rightLabel: ';' },
+];
+
+// Combined for legacy compatibility
+export const KEY_PAIRS = [...KEY_PAIRS_LEFT, ...KEY_PAIRS_START, ...KEY_PAIRS_RIGHT];
+
+// Leaderboard
+export const LEADERBOARD_MAX_ENTRIES = 10;
+export const COLOR_GOLD = '#ffd700';
+export const COLOR_SILVER = '#c0c0c0';
+export const COLOR_BRONZE = '#cd7f32';
 
 // localStorage key
 export const HIGH_SCORE_KEY = 'splittr-highscore';

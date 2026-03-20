@@ -1,4 +1,5 @@
 // src/particles.js — Particle effects for splits and destroys
+import { prefersReducedMotion } from './accessibility.js';
 
 export class Particle {
   constructor(x, y, vx, vy, color, size, life) {
@@ -39,6 +40,7 @@ export class ParticleSystem {
 
   // Burst of cyan shards when a box splits
   emitSplit(x, y, width, height) {
+    if (prefersReducedMotion()) return; // Skip particles for reduced motion
     const cx = x + width / 2;
     const cy = y + height / 2;
     const count = 20 + Math.floor(Math.random() * 10);
@@ -60,6 +62,7 @@ export class ParticleSystem {
 
   // Burst of red shards when a box is destroyed
   emitDestroy(x, y, width, height) {
+    if (prefersReducedMotion()) return; // Skip particles for reduced motion
     const cx = x + width / 2;
     const cy = y + height / 2;
     const count = 35 + Math.floor(Math.random() * 15);
@@ -79,8 +82,45 @@ export class ParticleSystem {
     this._emitRing(cx, cy, 'rgba(255, 23, 68, 0.7)', width);
   }
 
+  // Cyan healing burst when boxes merge
+  emitMerge(x, y, width, height) {
+    if (prefersReducedMotion()) return; // Skip particles for reduced motion
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    const count = 25 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 80 + Math.random() * 300;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed - 100;
+      // Cyan-pink mix for healing feel
+      const isCyan = Math.random() > 0.3;
+      const hue = isCyan ? 180 + Math.random() * 20 : 330 + Math.random() * 30;
+      const lightness = 55 + Math.random() * 30;
+      const color = `hsl(${hue}, 100%, ${lightness}%)`;
+      const size = 2 + Math.random() * 4;
+      const life = 0.4 + Math.random() * 0.6;
+      this.particles.push(new Particle(cx, cy, vx, vy, color, size, life));
+    }
+    this._emitRing(cx, cy, 'rgba(0, 212, 255, 0.5)', width * 0.6);
+  }
+
+  // Pink sparkle trail behind heart triangles
+  emitHeartTrail(x, y) {
+    if (prefersReducedMotion()) return;
+    if (Math.random() > 0.4) return;
+    const vx = (Math.random() - 0.5) * 30;
+    const vy = -15 - Math.random() * 30;
+    const hue = 330 + Math.random() * 30;
+    const color = `hsl(${hue}, 100%, ${65 + Math.random() * 20}%)`;
+    const size = 1 + Math.random() * 2;
+    const life = 0.2 + Math.random() * 0.3;
+    this.particles.push(new Particle(x, y, vx, vy, color, size, life));
+  }
+
   // Trailing sparkle behind moving triangles
   emitTriangleTrail(x, y) {
+    if (prefersReducedMotion()) return;
     if (Math.random() > 0.3) return; // sparse trail
     const vx = (Math.random() - 0.5) * 40;
     const vy = -20 - Math.random() * 40;

@@ -1,9 +1,11 @@
-// src/player.js — PlayerBox class
+// src/player.js — PlayerBox class with trail, speed lines, and shield
 import {
   PLAYER_ACCEL, PLAYER_FRICTION, PLAYER_WALL_BOUNCE,
   SPLIT_FLY_APART_MULTIPLIER, SPLIT_INITIAL_VELOCITY,
-  SPLIT_IMMUNITY_MS,
+  SPLIT_IMMUNITY_MS, TRAIL_SPEED_THRESHOLD, TRAIL_MAX_LENGTH,
+  MERGE_SLIDE_SPEED,
 } from './constants.js';
+import { getCurrentSkin } from './skins.js';
 
 export class PlayerBox {
   constructor(x, y, width, height, splitDepth, keyPair) {
@@ -15,12 +17,34 @@ export class PlayerBox {
     this.keyPair = keyPair;
     this.velocity = 0;
     this.immuneUntil = 0;
+    this.shieldUntil = 0; // golden triangle shield
+    this._trail = []; // trail positions for motion trail
+    this._gamepadIndex = -1; // set externally for gamepad control
+    this.merging = false; // true when sliding toward merge partner
+    this.mergeTargetX = 0; // x position to slide toward
   }
 
   update(dt, input, canvasWidth) {
+    // If merging, slide toward target and skip normal controls
+    if (this.merging) {
+      const diff = this.mergeTargetX - this.x;
+      if (Math.abs(diff) < 2) {
+        this.x = this.mergeTargetX;
+      } else {
+        this.x += Math.sign(diff) * MERGE_SLIDE_SPEED * dt;
+      }
+      return;
+    }
+
     let accel = 0;
     if (input.isDown(this.keyPair.left)) accel -= PLAYER_ACCEL;
     if (input.isDown(this.keyPair.right)) accel += PLAYER_ACCEL;
+
+    // Gamepad input (additive to keyboard)
+    if (this._gamepadIndex >= 0) {
+      const axis = input.getGamepadAxis(this._gamepadIndex);
+      if (axis !== 0) accel += axis * PLAYER_ACCEL;
+    }
 
     // Friction opposes current velocity
     if (this.velocity !== 0) {
@@ -45,6 +69,24 @@ export class PlayerBox {
       this.x = canvasWidth - this.width;
       this.velocity *= -PLAYER_WALL_BOUNCE;
     }
+
+    // Update trail
+    if (Math.abs(this.velocity) > TRAIL_SPEED_THRESHOLD) {
+      this._trail.push({ x: this.x, y: this.y, alpha: 1 });
+      if (this._trail.length > TRAIL_MAX_LENGTH) {
+        this._trail.shift();
+      }
+    } else {
+      // Fade out existing trail
+      for (let i = this._trail.length - 1; i >= 0; i--) {
+        this._trail[i].alpha -= dt * 4;
+        if (this._trail[i].alpha <= 0) this._trail.splice(i, 1);
+      }
+    }
+    // Decay trail alpha
+    for (const t of this._trail) {
+      t.alpha -= dt * 3;
+    }
   }
 
   split(newKeyPair, now = performance.now()) {
@@ -60,6 +102,7 @@ export class PlayerBox {
     );
     left.velocity = -SPLIT_INITIAL_VELOCITY;
     left.immuneUntil = now + SPLIT_IMMUNITY_MS;
+    left.shieldUntil = this.shieldUntil; // inherit shield
 
     const right = new PlayerBox(
       centerX + separation - childWidth / 2,
@@ -68,6 +111,7 @@ export class PlayerBox {
     );
     right.velocity = SPLIT_INITIAL_VELOCITY;
     right.immuneUntil = now + SPLIT_IMMUNITY_MS;
+    right.shieldUntil = this.shieldUntil; // inherit shield
 
     return [left, right];
   }
@@ -85,8 +129,21 @@ export class PlayerBox {
     return now < this.immuneUntil;
   }
 
+  hasShield(now) {
+    return now < this.shieldUntil;
+  }
+
   render(ctx, now) {
     const immune = this.isImmune(now);
+    const shielded = this.hasShield(now);
+
+    // Render trail (behind the box)
+    this._renderTrail(ctx);
+
+    // Render speed lines when moving fast
+    if (Math.abs(this.velocity) > TRAIL_SPEED_THRESHOLD * 1.5) {
+      this._renderSpeedLines(ctx);
+    }
 
     // Flashing during immunity
     if (immune) {
@@ -94,10 +151,11 @@ export class PlayerBox {
     }
 
     // Glow effect
-    const glowHue = 190;
+    const skin = getCurrentSkin();
+    const glowHue = shielded ? 45 : skin.playerHue; // gold when shielded
     const glowLightness = 50 + this.splitDepth * 8;
     ctx.shadowColor = `hsl(${glowHue}, 100%, ${glowLightness}%)`;
-    ctx.shadowBlur = immune ? 20 + Math.sin(now / 50) * 10 : 12;
+    ctx.shadowBlur = immune ? 20 + Math.sin(now / 50) * 10 : shielded ? 25 : 12;
 
     // Gradient fill that lightens with split depth
     const lightBase = Math.min(40 + this.splitDepth * 10, 75);
@@ -126,29 +184,222 @@ export class PlayerBox {
     this._roundRect(ctx, this.x, this.y, this.width, this.height, r);
     ctx.stroke();
 
+    // Shield bubble effect
+    if (shielded) {
+      const shieldPulse = 0.3 + 0.15 * Math.sin(now / 100);
+      // Flicker warning when shield is about to expire
+      const remaining = this.shieldUntil - now;
+      const flickerAlpha = remaining < 800 ? (Math.floor(now / 80) % 2 === 0 ? 0.1 : shieldPulse) : shieldPulse;
+      ctx.strokeStyle = `rgba(255, 215, 0, ${flickerAlpha})`;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = COLOR_GOLDEN_GLOW;
+      ctx.shadowBlur = 15;
+      const pad = 5;
+      this._roundRect(ctx, this.x - pad, this.y - pad, this.width + pad * 2, this.height + pad * 2, r + pad);
+      ctx.stroke();
+    }
+
     // Reset shadow
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1.0;
 
-    // Key labels on the box face
-    const fontSize = Math.max(10, Math.min(24, this.width / 3));
+    // Draw smiley face — expression changes with split depth
+    const cx = this.x + this.width / 2;
+    const cy = this.y + this.height * 0.38;
+    const faceSize = Math.min(this.width, this.height) * 0.28;
+
+    this._drawFace(ctx, cx, cy, faceSize, this.splitDepth, now, shielded);
+
+    // Key labels below the face
+    const fontSize = Math.max(8, Math.min(18, this.width / 4));
     ctx.font = `bold ${fontSize}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const centerY = this.y + this.height / 2;
+    const labelY = this.y + this.height * 0.78;
     const quarter = this.width / 4;
 
-    // Text shadow for readability
+    // Text shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillText(this.keyPair.leftLabel, this.x + quarter + 1, centerY + 1);
-    ctx.fillText(this.keyPair.rightLabel, this.x + this.width - quarter + 1, centerY + 1);
+    ctx.fillText(this.keyPair.leftLabel, this.x + quarter + 1, labelY + 1);
+    ctx.fillText(this.keyPair.rightLabel, this.x + this.width - quarter + 1, labelY + 1);
 
     // Actual text
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillText(this.keyPair.leftLabel, this.x + quarter, labelY);
+    ctx.fillText(this.keyPair.rightLabel, this.x + this.width - quarter, labelY);
+  }
+
+  _renderTrail(ctx) {
+    for (let i = 0; i < this._trail.length; i++) {
+      const t = this._trail[i];
+      if (t.alpha <= 0) continue;
+      const alpha = Math.max(0, t.alpha * 0.4 * (i / this._trail.length));
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `hsl(${getCurrentSkin().playerHue}, 100%, 60%)`;
+      const r = Math.min(4, this.width / 10);
+      this._roundRect(ctx, t.x, t.y, this.width, this.height, r);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  _renderSpeedLines(ctx) {
+    const speed = Math.abs(this.velocity);
+    const dir = this.velocity > 0 ? -1 : 1;
+    const intensity = Math.min(1, (speed - TRAIL_SPEED_THRESHOLD) / 800);
+    const lineCount = Math.floor(3 + intensity * 5);
+    ctx.strokeStyle = `rgba(${getCurrentSkin().accentRgb}, ${0.15 * intensity})`;
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i < lineCount; i++) {
+      const offsetY = this.y + Math.random() * this.height;
+      const startX = dir > 0 ? this.x + this.width : this.x;
+      const length = 20 + Math.random() * 40 * intensity;
+      ctx.beginPath();
+      ctx.moveTo(startX, offsetY);
+      ctx.lineTo(startX + dir * length, offsetY);
+      ctx.stroke();
+    }
+  }
+
+  _drawFace(ctx, cx, cy, size, depth, now, shielded) {
+    const s = size;
+
+    ctx.save();
+
+    // Eyes
+    const eyeSpacing = s * 0.35;
+    const eyeY = cy - s * 0.1;
+    const eyeSize = s * 0.18;
+
     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillText(this.keyPair.leftLabel, this.x + quarter, centerY);
-    ctx.fillText(this.keyPair.rightLabel, this.x + this.width - quarter, centerY);
+
+    if (shielded) {
+      // Cool sunglasses look when shielded
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing, eyeY, eyeSize * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing, eyeY, eyeSize * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      // Big grin
+      const mouthY = cy + s * 0.3;
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.9)';
+      ctx.lineWidth = Math.max(1.5, s * 0.07);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, mouthY - s * 0.1, s * 0.4, 0.1 * Math.PI, 0.9 * Math.PI);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    if (depth === 0) {
+      // Happy — round eyes
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (depth === 1) {
+      // Worried — wider eyes, raised eyebrows
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing, eyeY, eyeSize * 1.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing, eyeY, eyeSize * 1.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = Math.max(1.5, s * 0.07);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - eyeSpacing - eyeSize, eyeY - eyeSize * 2.2);
+      ctx.lineTo(cx - eyeSpacing + eyeSize, eyeY - eyeSize * 1.6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + eyeSpacing + eyeSize, eyeY - eyeSize * 2.2);
+      ctx.lineTo(cx + eyeSpacing - eyeSize, eyeY - eyeSize * 1.6);
+      ctx.stroke();
+    } else if (depth === 2) {
+      ctx.beginPath();
+      ctx.ellipse(cx - eyeSpacing, eyeY, eyeSize * 1.1, eyeSize * 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + eyeSpacing, eyeY, eyeSize * 1.1, eyeSize * 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (depth === 3) {
+      const dart = Math.sin(now / 80) * eyeSize * 0.3;
+      ctx.beginPath();
+      ctx.ellipse(cx - eyeSpacing, eyeY, eyeSize * 1.3, eyeSize * 1.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + eyeSpacing, eyeY, eyeSize * 1.3, eyeSize * 1.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = getCurrentSkin().backgroundColor;
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing + dart, eyeY, eyeSize * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing + dart, eyeY, eyeSize * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const shake = Math.sin(now / 30) * 2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = Math.max(2, s * 0.1);
+      ctx.lineCap = 'round';
+      const xSize = eyeSize * 1.1;
+      ctx.beginPath();
+      ctx.moveTo(cx - eyeSpacing - xSize + shake, eyeY - xSize);
+      ctx.lineTo(cx - eyeSpacing + xSize + shake, eyeY + xSize);
+      ctx.moveTo(cx - eyeSpacing + xSize + shake, eyeY - xSize);
+      ctx.lineTo(cx - eyeSpacing - xSize + shake, eyeY + xSize);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + eyeSpacing - xSize - shake, eyeY - xSize);
+      ctx.lineTo(cx + eyeSpacing + xSize - shake, eyeY + xSize);
+      ctx.moveTo(cx + eyeSpacing + xSize - shake, eyeY - xSize);
+      ctx.lineTo(cx + eyeSpacing - xSize - shake, eyeY + xSize);
+      ctx.stroke();
+    }
+
+    // Mouth
+    const mouthY = cy + s * 0.3;
+    const mouthWidth = s * 0.4;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.lineWidth = Math.max(1.5, s * 0.07);
+    ctx.lineCap = 'round';
+
+    if (depth === 0) {
+      ctx.beginPath();
+      ctx.arc(cx, mouthY - s * 0.1, mouthWidth, 0.1 * Math.PI, 0.9 * Math.PI);
+      ctx.stroke();
+    } else if (depth === 1) {
+      ctx.beginPath();
+      ctx.arc(cx, mouthY + s * 0.2, mouthWidth * 0.6, 1.2 * Math.PI, 1.8 * Math.PI);
+      ctx.stroke();
+    } else if (depth === 2) {
+      const wobble = Math.sin(now / 200) * s * 0.02;
+      ctx.beginPath();
+      ctx.arc(cx, mouthY + s * 0.3 + wobble, mouthWidth * 0.7, 1.15 * Math.PI, 1.85 * Math.PI);
+      ctx.stroke();
+    } else if (depth === 3) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.beginPath();
+      ctx.ellipse(cx, mouthY, mouthWidth * 0.25, mouthWidth * 0.35, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.beginPath();
+      const wobble = Math.sin(now / 40) * s * 0.06;
+      ctx.ellipse(cx, mouthY + wobble, mouthWidth * 0.4, mouthWidth * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   _roundRect(ctx, x, y, w, h, r) {
@@ -165,3 +416,5 @@ export class PlayerBox {
     ctx.closePath();
   }
 }
+
+const COLOR_GOLDEN_GLOW = 'rgba(255, 215, 0, 0.6)';
