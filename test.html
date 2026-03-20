@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Splittr Tests</title>
+  <style>
+    body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+    .pass { color: #0f0; margin: 2px 0; }
+    .fail { color: #f44; margin: 2px 0; font-weight: bold; }
+    .summary { font-size: 1.4em; margin-bottom: 16px; padding: 8px; border-bottom: 1px solid #444; }
+  </style>
+</head>
+<body>
+  <div id="results"></div>
+  <script type="module">
+    // Import all test files — each registers tests via describe/it
+    import './tests/test-constants.js';
+    import './tests/test-collision.js';
+    import './tests/test-difficulty.js';
+    import './tests/test-input.js';
+    import './tests/test-player.js';
+    import './tests/test-triangle.js';
+    import { runAll } from './tests/test-runner.js';
+    runAll();
+  </script>
+</body>
+</html>
